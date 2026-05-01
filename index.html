@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>BA Shot｜ビフォーアフター撮影</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0f0f11; --surface: #1a1a1f; --surface2: #242429; --border: #2e2e35;
+    --accent: #4ade80; --accent2: #22c55e;
+    --before-color: #60a5fa; --after-color: #f97316;
+    --text: #f4f4f5; --text-sub: #a1a1aa;
+    --danger: #f87171; --warn: #fbbf24;
+    --radius: 16px; --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Noto Sans JP', sans-serif; background: var(--bg); color: var(--text); min-height: 100dvh; overflow-x: hidden; }
+
+  /* HEADER */
+  .app-header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(15,15,17,0.92); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; height: 56px; }
+  .app-logo { font-family: 'DM Mono', monospace; font-size: 18px; font-weight: 500; letter-spacing: 0.05em; color: var(--accent); }
+  .app-logo span { color: var(--text-sub); font-size: 11px; margin-left: 8px; font-family: 'Noto Sans JP'; letter-spacing: 0; }
+  .step-bar { display: flex; align-items: center; gap: 6px; }
+  .step-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); transition: all 0.3s; }
+  .step-dot.active { background: var(--accent); width: 20px; border-radius: 3px; }
+  .step-dot.done { background: var(--accent2); opacity: 0.5; }
+
+  /* SCREENS */
+  .screen { display: none; min-height: 100dvh; padding: 72px 0 24px; animation: fadeIn 0.25s ease; }
+  .screen.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .screen-inner { padding: 0 20px; }
+  .screen-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; line-height: 1.3; }
+  .screen-desc { font-size: 13px; color: var(--text-sub); margin-bottom: 24px; line-height: 1.6; }
+
+  /* FORM */
+  .form-group { margin-bottom: 20px; }
+  .form-label { display: block; font-size: 12px; color: var(--text-sub); margin-bottom: 8px; font-family: 'DM Mono', monospace; letter-spacing: 0.05em; text-transform: uppercase; }
+  .form-label .req { color: var(--accent); margin-left: 4px; }
+  input[type="text"], select, textarea { width: 100%; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-family: 'Noto Sans JP', sans-serif; font-size: 16px; padding: 14px 16px; outline: none; transition: border-color 0.2s, background 0.2s; -webkit-appearance: none; appearance: none; }
+  input[type="text"]:focus, select:focus, textarea:focus { border-color: var(--accent); background: var(--surface2); }
+  input[type="text"]::placeholder, textarea::placeholder { color: var(--text-sub); font-size: 15px; }
+  textarea { resize: none; line-height: 1.7; }
+  .select-wrap { position: relative; }
+  .select-wrap::after { content: '▾'; position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: var(--text-sub); pointer-events: none; }
+  select option { background: #1a1a1f; }
+  .char-count { font-size: 11px; color: var(--text-sub); text-align: right; margin-top: 6px; font-family: 'DM Mono', monospace; }
+
+  /* SITE LIST */
+  .site-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+  .site-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 16px 16px 16px 20px; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; }
+  .site-card:active { transform: scale(0.98); }
+  .site-card-status-bar { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; }
+  .bar-after { background: #60a5fa; } .bar-comment { background: #f97316; } .bar-done { background: #4ade80; }
+  .site-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+  .site-card-name { font-size: 15px; font-weight: 700; line-height: 1.4; flex: 1; }
+  .status-badge { font-size: 10px; font-family: 'DM Mono', monospace; font-weight: 500; padding: 3px 9px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; letter-spacing: 0.04em; }
+  .badge-after { background: rgba(96,165,250,0.15); color: #60a5fa; border: 1px solid rgba(96,165,250,0.3); }
+  .badge-comment { background: rgba(249,115,22,0.15); color: #f97316; border: 1px solid rgba(249,115,22,0.3); }
+  .badge-done { background: rgba(74,222,128,0.12); color: #4ade80; border: 1px solid rgba(74,222,128,0.25); }
+  .site-card-meta { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+  .site-card-tag { font-size: 11px; color: var(--text-sub); font-family: 'DM Mono', monospace; background: var(--surface2); padding: 2px 8px; border-radius: 4px; }
+  .site-card-date { font-size: 11px; color: var(--text-sub); }
+  .site-card-photos { display: flex; gap: 4px; }
+  .site-card-thumb { width: 48px; height: 36px; border-radius: 4px; overflow: hidden; border: 1px solid var(--border); flex-shrink: 0; }
+  .site-card-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .site-card-thumb-more { width: 48px; height: 36px; border-radius: 4px; background: var(--surface2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--text-sub); font-family: 'DM Mono', monospace; }
+  .empty-state { text-align: center; padding: 48px 20px; color: var(--text-sub); font-size: 14px; line-height: 1.8; }
+  .empty-icon { font-size: 40px; margin-bottom: 16px; opacity: 0.4; }
+
+  /* CHECKLIST */
+  .checklist-section { margin-bottom: 24px; }
+  .checklist-section-title { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .checklist-section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .check-item { display: flex; align-items: flex-start; gap: 14px; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s; user-select: none; -webkit-user-select: none; }
+  .check-item.checked { border-color: var(--accent); background: rgba(74,222,128,0.06); }
+  .check-box { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; transition: all 0.2s; }
+  .check-item.checked .check-box { background: var(--accent); border-color: var(--accent); }
+  .check-box::after { content: '✓'; color: #0f0f11; font-size: 13px; font-weight: 700; display: none; }
+  .check-item.checked .check-box::after { display: block; }
+  .check-text { font-size: 14px; line-height: 1.55; }
+  .check-progress { display: flex; align-items: center; gap: 12px; background: var(--surface); border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 24px; border: 1px solid var(--border); }
+  .progress-bar-wrap { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .progress-bar { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s ease; }
+  .progress-label { font-size: 12px; font-family: 'DM Mono', monospace; color: var(--text-sub); white-space: nowrap; }
+
+  /* CAMERA */
+  .camera-stage { background: var(--surface); border-radius: var(--radius); overflow: hidden; position: relative; aspect-ratio: 4/3; margin-bottom: 16px; border: 1.5px solid var(--border); }
+  .camera-stage video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .camera-overlay { position: absolute; inset: 0; pointer-events: none; }
+  .guide-frame { position: absolute; inset: 12%; border: 2px dashed rgba(255,255,255,0.3); border-radius: 8px; }
+  .guide-cross { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); }
+  .guide-cross::before, .guide-cross::after { content: ''; position: absolute; background: rgba(255,255,255,0.25); }
+  .guide-cross::before { width: 40px; height: 1px; top: 0; left: -20px; }
+  .guide-cross::after { width: 1px; height: 40px; top: -20px; left: 0; }
+  .camera-badge { position: absolute; top: 10px; left: 10px; font-size: 10px; font-family: 'DM Mono', monospace; letter-spacing: 0.08em; padding: 4px 10px; border-radius: 20px; font-weight: 500; }
+  .badge-before { background: rgba(96,165,250,0.9); color: #fff; }
+  .badge-after-cam { background: rgba(249,115,22,0.9); color: #fff; }
+
+  /* BEFORE GUIDE OVERLAY（After撮影時） */
+  .before-guide-overlay {
+    position: absolute; bottom: 10px; left: 10px;
+    width: 88px; border-radius: 8px; overflow: hidden;
+    border: 2px solid var(--before-color); background: var(--bg);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  }
+  .before-guide-overlay img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; }
+  .before-guide-label { font-size: 9px; font-family: 'DM Mono', monospace; color: var(--before-color); background: rgba(0,0,0,0.75); padding: 3px 6px; text-align: center; }
+
+  /* ANGLE COUNTER */
+  .angle-counter {
+    position: absolute; top: 10px; right: 10px;
+    font-size: 11px; font-family: 'DM Mono', monospace;
+    background: rgba(0,0,0,0.65); color: #fff;
+    padding: 4px 10px; border-radius: 20px; letter-spacing: 0.05em;
+  }
+
+  .camera-hint { font-size: 12px; color: var(--text-sub); text-align: center; margin-bottom: 12px; line-height: 1.5; }
+
+  .shutter-area { display: flex; align-items: center; justify-content: center; gap: 24px; margin-bottom: 16px; }
+  .btn-shutter { width: 72px; height: 72px; border-radius: 50%; border: 4px solid var(--text); background: rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; position: relative; }
+  .btn-shutter::after { content: ''; width: 56px; height: 56px; border-radius: 50%; background: var(--text); position: absolute; transition: all 0.15s; }
+  .btn-shutter:active::after { transform: scale(0.88); }
+  .flip-btn { width: 44px; height: 44px; border-radius: 50%; background: var(--surface2); border: 1.5px solid var(--border); color: var(--text); font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+  .flip-btn:active { transform: scale(0.9); }
+
+  /* ANGLE PAIR LIST */
+  .angle-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+  .angle-row {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm); padding: 10px 12px;
+  }
+  .angle-row.complete { border-color: var(--accent); }
+  .angle-num { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text-sub); width: 24px; flex-shrink: 0; }
+  .angle-thumb { width: 60px; height: 45px; border-radius: 6px; overflow: hidden; flex-shrink: 0; position: relative; }
+  .angle-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .angle-thumb-label { position: absolute; bottom: 0; left: 0; right: 0; font-size: 8px; font-family: 'DM Mono', monospace; text-align: center; padding: 2px; }
+  .angle-thumb.before-thumb .angle-thumb-label { background: rgba(96,165,250,0.85); color: #fff; }
+  .angle-thumb.after-thumb .angle-thumb-label { background: rgba(249,115,22,0.85); color: #fff; }
+  .angle-thumb.empty-thumb { background: var(--surface2); border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--border); }
+  .angle-arrow { color: var(--border); font-size: 14px; flex-shrink: 0; }
+  .angle-status { margin-left: auto; font-size: 10px; font-family: 'DM Mono', monospace; }
+  .angle-status.ok { color: var(--accent); }
+  .angle-status.pending { color: var(--text-sub); }
+
+  /* CONFIRM */
+  .confirm-section { margin-bottom: 28px; }
+  .confirm-section-title { font-size: 11px; font-family: 'DM Mono', monospace; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .confirm-section-title.before-title { color: var(--before-color); }
+  .confirm-section-title.after-title { color: var(--after-color); }
+  .confirm-section-title.comment-title { color: var(--text-sub); }
+  .confirm-section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .pair-grid { display: flex; flex-direction: column; gap: 8px; }
+  .pair-row { display: flex; gap: 8px; align-items: center; }
+  .pair-num { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text-sub); width: 20px; flex-shrink: 0; text-align: right; }
+  .pair-img { flex: 1; aspect-ratio: 4/3; border-radius: 8px; overflow: hidden; border: 1.5px solid var(--border); }
+  .pair-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .pair-arrow { color: var(--border); font-size: 16px; flex-shrink: 0; }
+  .info-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 20px; }
+  .info-card-row { display: flex; align-items: flex-start; margin-bottom: 10px; }
+  .info-card-row:last-child { margin-bottom: 0; }
+  .info-card-label { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text-sub); width: 90px; flex-shrink: 0; padding-top: 1px; }
+  .info-card-val { font-size: 14px; line-height: 1.4; }
+  .comment-preview { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; font-size: 14px; line-height: 1.7; white-space: pre-wrap; margin-bottom: 20px; }
+  .folder-path { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 20px; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-sub); line-height: 1.8; word-break: break-all; }
+
+  /* BUTTONS */
+  .btn { display: block; width: 100%; padding: 16px; border-radius: var(--radius-sm); font-family: 'Noto Sans JP', sans-serif; font-size: 15px; font-weight: 700; text-align: center; border: none; cursor: pointer; transition: all 0.2s; letter-spacing: 0.03em; }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--accent); color: #0f0f11; }
+  .btn-primary:disabled { background: var(--border); color: var(--text-sub); pointer-events: none; }
+  .btn-secondary { background: var(--surface); color: var(--text); border: 1.5px solid var(--border); }
+  .btn-before { background: rgba(96,165,250,0.15); color: var(--before-color); border: 1.5px solid var(--before-color); }
+  .btn-danger { background: rgba(248,113,113,0.12); color: var(--danger); border: 1.5px solid var(--danger); }
+  .btn-stack { display: flex; flex-direction: column; gap: 12px; }
+
+  /* NOTICE */
+  .notice { background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.25); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 12px; color: var(--warn); line-height: 1.6; margin-bottom: 20px; }
+
+  /* PHOTO CONFIRM PANEL */
+  .photo-confirm-overlay { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); align-items: flex-end; }
+  .photo-confirm-overlay.open { display: flex; animation: overlayIn 0.2s ease; }
+  @keyframes overlayIn { from { opacity:0; } to { opacity:1; } }
+  .photo-confirm-panel { width: 100%; background: var(--surface); border-top: 1.5px solid var(--border); border-radius: 20px 20px 0 0; padding: 16px 20px 32px; transform: translateY(100%); animation: panelUp 0.28s cubic-bezier(0.22,1,0.36,1) forwards; }
+  @keyframes panelUp { to { transform: translateY(0); } }
+  .panel-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 16px; }
+  .panel-title { font-size: 13px; font-family: 'DM Mono', monospace; color: var(--text-sub); letter-spacing: 0.08em; text-align: center; margin-bottom: 14px; }
+  .panel-preview { width: 100%; aspect-ratio: 4/3; border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 16px; border: 1.5px solid var(--border); background: var(--bg); }
+  .panel-preview img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .panel-btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* AFTER NEXT PANEL（アングル追加確認） */
+  .next-panel-overlay { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); align-items: flex-end; }
+  .next-panel-overlay.open { display: flex; animation: overlayIn 0.2s ease; }
+  .next-panel { width: 100%; background: var(--surface); border-top: 1.5px solid var(--border); border-radius: 20px 20px 0 0; padding: 20px 20px 36px; transform: translateY(100%); animation: panelUp 0.28s cubic-bezier(0.22,1,0.36,1) forwards; }
+  .next-panel-title { font-size: 16px; font-weight: 700; text-align: center; margin-bottom: 6px; }
+  .next-panel-desc { font-size: 13px; color: var(--text-sub); text-align: center; line-height: 1.6; margin-bottom: 20px; }
+
+  /* COMPLETE */
+  .complete-icon { width: 80px; height: 80px; border-radius: 50%; background: rgba(74,222,128,0.1); border: 2px solid var(--accent); display: flex; align-items: center; justify-content: center; font-size: 36px; margin: 0 auto 24px; }
+  .complete-title { font-size: 26px; font-weight: 700; text-align: center; margin-bottom: 8px; }
+  .complete-desc { font-size: 14px; color: var(--text-sub); text-align: center; line-height: 1.7; margin-bottom: 32px; white-space: pre-line; }
+
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 16px); }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="app-logo">BA Shot <span>ビフォーアフター撮影</span></div>
+  <div class="step-bar" id="stepBar"></div>
+</header>
+
+<!-- SCREEN 0: 現場一覧 -->
+<div class="screen active" id="screen0">
+  <div class="screen-inner safe-bottom">
+    <p class="screen-title">現場一覧</p>
+    <p class="screen-desc">撮影中の現場を選択するか、新しい現場を登録してください。</p>
+    <div style="margin-bottom:20px;"><button class="btn btn-primary" onclick="startNewSite()">＋ 新しい現場を登録</button></div>
+    <div id="siteList"></div>
+  </div>
+</div>
+
+<!-- SCREEN 1: 基本情報 -->
+<div class="screen" id="screen1">
+  <div class="screen-inner safe-bottom">
+    <p class="screen-title">基本情報の入力</p>
+    <p class="screen-desc">担当者・現場・工事種別を入力してください。</p>
+    <div class="form-group">
+      <label class="form-label">担当者名 <span class="req">*</span></label>
+      <input type="text" id="staffName" placeholder="例：山田 太郎" autocomplete="name">
+    </div>
+    <div class="form-group">
+      <label class="form-label">現場名 <span class="req">*</span></label>
+      <input type="text" id="siteName" placeholder="例：北九州市小倉北区 様邸">
+    </div>
+    <div class="form-group">
+      <label class="form-label">工事種別 <span class="req">*</span></label>
+      <div class="select-wrap">
+        <select id="workType">
+          <option value="">選択してください</option>
+          <option value="水回り">水回り（キッチン・浴室・トイレ・洗面）</option>
+          <option value="設備交換">設備交換（エアコン・給湯器等）</option>
+          <option value="内装">内装（壁紙・床・建具）</option>
+          <option value="外装">外装（外壁塗装・屋根）</option>
+          <option value="間取り変更・大規模リノベ">間取り変更・大規模リノベ</option>
+        </select>
+      </div>
+    </div>
+    <div class="btn-stack" style="margin-top:32px;">
+      <button class="btn btn-primary" onclick="goNext1()">チェックリストへ進む →</button>
+      <button class="btn btn-secondary" onclick="showScreen(0)">← 戻る</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 2: チェックリスト -->
+<div class="screen" id="screen2">
+  <div class="screen-inner safe-bottom">
+    <p class="screen-title">撮影前チェックリスト</p>
+    <p class="screen-desc" id="checklistDesc"></p>
+    <div class="check-progress">
+      <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar" style="width:0%"></div></div>
+      <div class="progress-label" id="progressLabel">0 / 0</div>
+    </div>
+    <div id="checklistContainer"></div>
+    <div class="btn-stack">
+      <button class="btn btn-primary" id="btnToCamera" onclick="goNext2()" disabled></button>
+      <button class="btn btn-secondary" onclick="goBackFromChecklist()">← 戻る</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 3: Before撮影 -->
+<div class="screen" id="screen3">
+  <div class="screen-inner safe-bottom">
+    <p class="screen-title">Before撮影</p>
+    <p class="screen-desc" id="beforeDesc">アングルを決めて撮影してください。</p>
+    <div class="camera-stage">
+      <video id="videoEl" autoplay playsinline muted></video>
+      <div class="camera-overlay">
+        <div class="guide-frame"></div><div class="guide-cross"></div>
+        <div class="camera-badge badge-before">BEFORE</div>
+        <div class="angle-counter" id="beforeAngleCounter">アングル 1</div>
+      </div>
+    </div>
+    <p class="camera-hint" id="angleHint3"></p>
+    <div class="shutter-area">
+      <div class="flip-btn" onclick="flipCamera()">↺</div>
+      <div class="btn-shutter" onclick="capturePhoto('before')"></div>
+      <div style="width:44px"></div>
+    </div>
+    <!-- 撮影済みアングル一覧 -->
+    <div class="angle-list" id="beforeAngleList"></div>
+    <div class="btn-stack">
+      <button class="btn btn-before" id="btnSaveBefore" onclick="saveBefore()" disabled>Before撮影を完了して保存</button>
+      <button class="btn btn-secondary" onclick="goBack(2)">← 戻る</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 4: After撮影 -->
+<div class="screen" id="screen4">
+  <div class="screen-inner safe-bottom">
+    <p class="screen-title">After撮影</p>
+    <p class="screen-desc" id="afterDesc">Beforeと同じアングルで撮影してください。</p>
+    <div class="camera-stage">
+      <video id="videoEl2" autoplay playsinline muted></video>
+      <div class="camera-overlay">
+        <div class="guide-frame"></div><div class="guide-cross"></div>
+        <div class="camera-badge badge-after-cam">AFTER</div>
+        <div class="angle-counter" id="afterAngleCounter">アングル 1 / 1</div>
+        <div class="before-guide-overlay" id="beforeGuideOverlay">
+          <img id="beforeGuideImg" src="" alt="">
+          <div class="before-guide-label">BEFORE</div>
+        </div>
+      </div>
+    </div>
+    <p class="camera-hint" id="angleHint4"></p>
+    <div class="shutter-area">
+      <div class="flip-btn" onclick="flipCamera2()">↺</div>
+      <div class="btn-shutter" onclick="capturePhoto('after')"></div>
+      <div style="width:44px"></div>
+    </div>
+    <!-- After進捗一覧 -->
+    <div class="angle-list" id="afterAngleList"></div>
+    <div class="btn-stack">
+      <button class="btn btn-secondary" onclick="goBack(2)">← 戻る</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 5: コメント入力 -->
+<div class="screen" id="screen5">
+  <div class="screen-inner safe-bottom">
+    <p class="screen-title">コメント入力</p>
+    <p class="screen-desc">HP・SNS掲載用の説明文の元ネタになります。施工のポイントや仕上がりの特徴を記載してください。</p>
+    <div class="form-group">
+      <label class="form-label">現場コメント <span class="req">*</span></label>
+      <textarea id="siteComment" rows="6" placeholder="例：キッチンの吊り戸棚を撤去し、対面式カウンターに変更。明るく開放的な空間になりました。" oninput="updateCharCount()"></textarea>
+      <div class="char-count"><span id="charCount">0</span> 文字</div>
+    </div>
+    <div class="btn-stack" style="margin-top:8px;">
+      <button class="btn btn-primary" id="btnToConfirm" onclick="goNext5()" disabled>確認画面へ進む →</button>
+      <button class="btn btn-secondary" onclick="goBackToAfter()">← After撮影に戻る</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 6: 確認・保存 -->
+<div class="screen" id="screen6">
+  <div class="screen-inner safe-bottom">
+    <p class="screen-title">確認・保存</p>
+    <p class="screen-desc">内容を確認してDropboxへ共有してください。</p>
+    <div class="info-card">
+      <div class="info-card-row"><div class="info-card-label">担当者</div><div class="info-card-val" id="confStaff"></div></div>
+      <div class="info-card-row"><div class="info-card-label">現場名</div><div class="info-card-val" id="confSite"></div></div>
+      <div class="info-card-row"><div class="info-card-label">工事種別</div><div class="info-card-val" id="confWork"></div></div>
+      <div class="info-card-row"><div class="info-card-label">撮影日</div><div class="info-card-val" id="confDate"></div></div>
+      <div class="info-card-row"><div class="info-card-label">アングル数</div><div class="info-card-val" id="confAngles"></div></div>
+    </div>
+    <div class="confirm-section">
+      <div class="confirm-section-title before-title">Before / After ペア</div>
+      <div class="pair-grid" id="confPairGrid"></div>
+    </div>
+    <div class="confirm-section">
+      <div class="confirm-section-title comment-title">コメント</div>
+      <div class="comment-preview" id="confComment"></div>
+    </div>
+    <div class="folder-path" id="folderPath"></div>
+    <div class="notice">⚠ Phase 1では端末への個別ダウンロードで保存します。保存後、Dropboxの所定フォルダへ手動で移動してください。</div>
+    <div class="btn-stack">
+      <button class="btn btn-primary" onclick="downloadAll()">📥 全写真を保存する</button>
+      <button class="btn btn-secondary" onclick="goBackToComment()">← コメントを修正する</button>
+      <button class="btn btn-danger" onclick="confirmDeleteSite()">✕ この現場データを削除する</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 7: 完了 -->
+<div class="screen" id="screen7">
+  <div class="screen-inner safe-bottom" style="padding-top:32px;">
+    <div class="complete-icon">✓</div>
+    <p class="complete-title">保存完了</p>
+    <p class="complete-desc" id="completeDesc"></p>
+    <div class="folder-path" id="completePath"></div>
+    <div class="notice">📁 保存された写真をDropboxの上記フォルダへ移動してください。</div>
+    <div class="btn-stack">
+      <button class="btn btn-primary" onclick="showScreen(0)">現場一覧に戻る</button>
+    </div>
+  </div>
+</div>
+
+<!-- PHOTO CONFIRM PANEL -->
+<div class="photo-confirm-overlay" id="photoConfirmOverlay">
+  <div class="photo-confirm-panel">
+    <div class="panel-handle"></div>
+    <div class="panel-title" id="panelTitle">この写真で確定しますか？</div>
+    <div class="panel-preview"><img id="panelPreviewImg" src="" alt=""></div>
+    <div class="panel-btn-row">
+      <button class="btn btn-secondary" onclick="retakePhoto()">↺ 撮り直す</button>
+      <button class="btn btn-primary" onclick="confirmPhoto()">✓ 確定する</button>
+    </div>
+  </div>
+</div>
+
+<!-- BEFORE ANGLE NEXT PANEL（撮影後：追加 or 完了を選択） -->
+<div class="next-panel-overlay" id="nextPanelOverlay">
+  <div class="next-panel">
+    <div class="panel-handle"></div>
+    <div class="next-panel-title" id="nextPanelTitle">アングル1 を記録しました</div>
+    <div class="next-panel-desc">別のアングルも撮影しますか？</div>
+    <div class="btn-stack">
+      <button class="btn btn-secondary" onclick="addAnotherAngle()">＋ 別のアングルを追加する</button>
+      <button class="btn btn-before" onclick="finishBeforeFromPanel()">✓ Before撮影を完了する</button>
+    </div>
+  </div>
+</div>
+
+<canvas id="canvasEl" style="display:none"></canvas>
+
+<script>
+// ===== CONSTANTS =====
+const STORAGE_KEY = 'ba_shot_v3';
+const CHECKLIST = {
+  common: [
+    '人物・表札・ナンバープレートが映り込んでいないか確認した',
+    '逆光になっていないか確認した',
+    '道具・ゴミ・養生シートが映り込んでいないか確認した',
+    '横向き（ランドスケープ）で撮影する準備ができているか',
+  ],
+  '水回り': ['照明を点灯させているか確認した','カウンター・棚の上を片付けているか確認した','浴室はドアを開けた状態か確認した','正面全体と斜め45度の2アングルを撮る準備ができているか'],
+  '設備交換': ['機器の正面全体が画角に入っているか確認した','配管・配線が見える横アングルも撮る準備ができているか'],
+  '内装': ['部屋の角から対角線上に撮る位置に立っているか確認した','壁紙は継ぎ目のない面を選んでいるか確認した','建具は開閉両方を撮る準備ができているか'],
+  '外装': ['晴天か確認した（曇天は非推奨）','建物全体が入る引きの位置に立っているか確認した','建物に影がかかっていないか確認した','付帯部（雨樋・軒天・幕板）のアップも撮る準備ができているか'],
+  '間取り変更・大規模リノベ': ['Beforeは荷物がある状態でも撮影することを理解している','Afterは生活感ゼロの状態か確認した（家具搬入前が理想）','複数アングルで記録する準備ができているか'],
+};
+const ANGLE_HINTS = {
+  '水回り': '正面全体 ＋ 斜め45度の2アングルで撮影してください',
+  '設備交換': '機器の正面全体 ＋ 配管・配線が見える横アングルで撮影してください',
+  '内装': '部屋の角から対角線上に向けて撮影してください',
+  '外装': '建物全体が収まる引きの位置から撮影してください',
+  '間取り変更・大規模リノベ': '複数アングルで記録してください（広角・各部屋）',
+};
+
+// ===== SESSION =====
+// angles: [{ before: dataUrl, after: dataUrl|null }, ...]
+// currentAngleIdx: After撮影中の現在のアングルインデックス
+let sess = {
+  siteId: null, checklistMode: null,
+  angles: [],          // ペア配列
+  currentAngleIdx: 0,  // After撮影中の位置
+  stream: null, stream2: null, facingMode: 'environment'
+};
+let checkStates = [];
+let pending = { dataUrl: null, type: null };
+
+// ===== STORAGE =====
+function loadSites() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; } }
+function saveSites(s) { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
+function getSite(id) { return loadSites().find(s => s.id === id); }
+function upsertSite(site) { const a = loadSites(); const i = a.findIndex(s => s.id === site.id); if (i >= 0) a[i] = site; else a.unshift(site); saveSites(a); }
+function deleteSite(id) { saveSites(loadSites().filter(s => s.id !== id)); }
+
+// ===== STATUS =====
+function getStatus(site) {
+  const angles = site.angles || [];
+  const allAfterDone = angles.length > 0 && angles.every(a => a.after);
+  if (allAfterDone && site.comment) return 'done';
+  if (allAfterDone) return 'comment';
+  return 'after';
+}
+const STATUS_LABELS = { after: 'After写真待ち', comment: 'コメント入力待ち', done: '完了' };
+const STATUS_BADGE  = { after: 'badge-after', comment: 'badge-comment', done: 'badge-done' };
+const STATUS_BAR    = { after: 'bar-after', comment: 'bar-comment', done: 'bar-done' };
+
+// ===== UTILS =====
+function getTodayStr() { const d = new Date(); return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`; }
+function fmtDate(iso) { const d = new Date(iso); return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`; }
+
+// ===== STEP BAR =====
+function updateStepBar(total, current) {
+  const bar = document.getElementById('stepBar');
+  bar.innerHTML = '';
+  if (!total) return;
+  for (let i = 1; i <= total; i++) {
+    const el = document.createElement('div');
+    el.className = 'step-dot' + (i < current ? ' done' : i === current ? ' active' : '');
+    bar.appendChild(el);
+  }
+}
+
+// ===== SHOW SCREEN =====
+function showScreen(n) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen' + n).classList.add('active');
+  window.scrollTo(0, 0);
+  if (n === 0) { updateStepBar(null, 0); renderSiteList(); }
+}
+
+// ===== SCREEN 0: 一覧 =====
+function renderSiteList() {
+  const sites = loadSites();
+  const el = document.getElementById('siteList');
+  if (!sites.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📷</div>登録された現場はありません。<br>「新しい現場を登録」から始めてください。</div>`;
+    return;
+  }
+  const order = { after: 0, comment: 1, done: 2 };
+  const sorted = [...sites].sort((a,b) => order[getStatus(a)] - order[getStatus(b)]);
+  el.innerHTML = '';
+  sorted.forEach(site => {
+    const st = getStatus(site);
+    const angles = site.angles || [];
+    const thumbs = angles.slice(0,3).map(a => `<div class="site-card-thumb"><img src="${a.before}"></div>`).join('');
+    const more = angles.length > 3 ? `<div class="site-card-thumb-more">+${angles.length-3}</div>` : '';
+    const card = document.createElement('div');
+    card.className = 'site-card';
+    card.onclick = () => openSite(site.id);
+    card.innerHTML = `
+      <div class="site-card-status-bar ${STATUS_BAR[st]}"></div>
+      <div class="site-card-top">
+        <div class="site-card-name">${site.siteName}</div>
+        <div class="status-badge ${STATUS_BADGE[st]}">${STATUS_LABELS[st]}</div>
+      </div>
+      <div class="site-card-meta">
+        <div class="site-card-tag">${site.workType}</div>
+        <div class="site-card-date">${site.staffName}｜${fmtDate(site.createdAt)}｜${angles.length}アングル</div>
+      </div>
+      ${thumbs ? `<div class="site-card-photos">${thumbs}${more}</div>` : ''}`;
+    el.appendChild(card);
+  });
+}
+
+function openSite(id) {
+  sess.siteId = id;
+  const site = getSite(id);
+  const st = getStatus(site);
+  if (st === 'after') {
+    sess.checklistMode = 'after';
+    sess.angles = site.angles.map(a => ({ before: a.before, after: null })); // Afterをリセット
+    sess.currentAngleIdx = 0;
+    document.getElementById('checklistDesc').textContent = `${site.siteName} のAfter撮影前に確認してください。`;
+    document.getElementById('btnToCamera').textContent = '✓ チェック完了 — After撮影へ';
+    buildChecklist(site.workType);
+    updateStepBar(4, 1);
+    showScreen(2);
+  } else if (st === 'comment') {
+    sess.angles = site.angles || [];
+    document.getElementById('siteComment').value = site.comment || '';
+    updateCharCount();
+    updateStepBar(4, 3);
+    showScreen(5);
+  } else {
+    sess.angles = site.angles || [];
+    buildConfirmScreen(site);
+    updateStepBar(4, 4);
+    showScreen(6);
+  }
+}
+
+// ===== SCREEN 1: 新規 =====
+function startNewSite() {
+  sess = { siteId: 'site_' + Date.now(), checklistMode: 'before', angles: [], currentAngleIdx: 0, stream: null, stream2: null, facingMode: 'environment' };
+  ['staffName','siteName'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('workType').value = '';
+  updateStepBar(3, 1);
+  showScreen(1);
+}
+
+function goNext1() {
+  const staff = document.getElementById('staffName').value.trim();
+  const site  = document.getElementById('siteName').value.trim();
+  const work  = document.getElementById('workType').value;
+  if (!staff || !site || !work) { alert('すべての項目を入力してください'); return; }
+  document.getElementById('checklistDesc').textContent = 'すべての項目を確認してチェックを入れてください。';
+  document.getElementById('btnToCamera').textContent = '✓ チェック完了 — Before撮影へ';
+  buildChecklist(work);
+  updateStepBar(3, 2);
+  showScreen(2);
+}
+
+// ===== SCREEN 2: チェックリスト =====
+function buildChecklist(workType) {
+  const c = document.getElementById('checklistContainer');
+  c.innerHTML = '';
+  const items = [...CHECKLIST.common, ...(CHECKLIST[workType]||[])];
+  checkStates = new Array(items.length).fill(false);
+  const sec = title => { const d = document.createElement('div'); d.className='checklist-section'; d.innerHTML=`<div class="checklist-section-title">${title}</div>`; return d; };
+  const cs = sec('共通'), ts = sec(workType);
+  items.forEach((text, i) => {
+    const el = document.createElement('div');
+    el.className = 'check-item';
+    el.innerHTML = `<div class="check-box"></div><div class="check-text">${text}</div>`;
+    el.addEventListener('click', () => { checkStates[i] = !checkStates[i]; el.classList.toggle('checked', checkStates[i]); updateProgress(); });
+    (i < CHECKLIST.common.length ? cs : ts).appendChild(el);
+  });
+  c.appendChild(cs);
+  if (CHECKLIST[workType]) c.appendChild(ts);
+  updateProgress();
+}
+
+function updateProgress() {
+  const total = checkStates.length, done = checkStates.filter(Boolean).length;
+  document.getElementById('progressBar').style.width = (total>0?done/total*100:0)+'%';
+  document.getElementById('progressLabel').textContent = `${done} / ${total}`;
+  document.getElementById('btnToCamera').disabled = done < total;
+}
+
+function goBackFromChecklist() {
+  sess.checklistMode === 'after' ? showScreen(0) : showScreen(1);
+}
+
+function goNext2() {
+  if (sess.checklistMode === 'before') {
+    sess.angles = [];
+    const work = document.getElementById('workType').value;
+    document.getElementById('angleHint3').textContent = ANGLE_HINTS[work] || '';
+    renderBeforeAngleList();
+    updateBeforeAngleCounter();
+    updateStepBar(3, 3);
+    showScreen(3);
+    startCamera();
+  } else {
+    const site = getSite(sess.siteId);
+    sess.currentAngleIdx = 0;
+    document.getElementById('angleHint4').textContent = ANGLE_HINTS[site.workType] || '';
+    updateAfterView();
+    renderAfterAngleList();
+    updateStepBar(4, 2);
+    showScreen(4);
+    startCamera2();
+  }
+}
+
+// ===== CAMERAS =====
+async function startCamera() {
+  try {
+    if (sess.stream) sess.stream.getTracks().forEach(t=>t.stop());
+    sess.stream = await navigator.mediaDevices.getUserMedia({ video:{facingMode:sess.facingMode,width:{ideal:1920},height:{ideal:1440}}, audio:false });
+    document.getElementById('videoEl').srcObject = sess.stream;
+  } catch(e) { alert('カメラの起動に失敗しました。\n'+e.message); }
+}
+async function startCamera2() {
+  try {
+    if (sess.stream2) sess.stream2.getTracks().forEach(t=>t.stop());
+    sess.stream2 = await navigator.mediaDevices.getUserMedia({ video:{facingMode:sess.facingMode,width:{ideal:1920},height:{ideal:1440}}, audio:false });
+    document.getElementById('videoEl2').srcObject = sess.stream2;
+  } catch(e) { alert('カメラの起動に失敗しました。\n'+e.message); }
+}
+async function flipCamera() { sess.facingMode = sess.facingMode==='environment'?'user':'environment'; await startCamera(); }
+async function flipCamera2() { sess.facingMode = sess.facingMode==='environment'?'user':'environment'; await startCamera2(); }
+function stopCameras() {
+  if (sess.stream) { sess.stream.getTracks().forEach(t=>t.stop()); sess.stream=null; }
+  if (sess.stream2) { sess.stream2.getTracks().forEach(t=>t.stop()); sess.stream2=null; }
+}
+
+function goBack(to) {
+  stopCameras();
+  if (to === 2) {
+    const site = getSite(sess.siteId);
+    const wt = sess.checklistMode==='before' ? document.getElementById('workType').value : site.workType;
+    buildChecklist(wt);
+    document.getElementById('btnToCamera').textContent = sess.checklistMode==='before' ? '✓ チェック完了 — Before撮影へ' : '✓ チェック完了 — After撮影へ';
+  }
+  showScreen(to);
+  if (to === 4) startCamera2();
+}
+
+// ===== CAPTURE =====
+function capturePhoto(type) {
+  const video = type==='before' ? document.getElementById('videoEl') : document.getElementById('videoEl2');
+  const canvas = document.getElementById('canvasEl');
+  canvas.width = video.videoWidth||1280; canvas.height = video.videoHeight||960;
+  canvas.getContext('2d').drawImage(video,0,0);
+  const dataUrl = canvas.toDataURL('image/jpeg',0.9);
+  const stage = video.closest('.camera-stage');
+  stage.style.opacity='0.4'; setTimeout(()=>{stage.style.opacity='1';},120);
+  pending = { dataUrl, type };
+  document.getElementById('panelPreviewImg').src = dataUrl;
+  document.getElementById('panelTitle').textContent = type==='before' ? 'この写真で確定しますか？（Before）' : 'この写真で確定しますか？（After）';
+  document.getElementById('photoConfirmOverlay').classList.add('open');
+}
+
+function retakePhoto() {
+  document.getElementById('photoConfirmOverlay').classList.remove('open');
+  pending = { dataUrl:null, type:null };
+}
+
+function confirmPhoto() {
+  document.getElementById('photoConfirmOverlay').classList.remove('open');
+  const { dataUrl, type } = pending;
+  pending = { dataUrl:null, type:null };
+
+  if (type === 'before') {
+    // アングル追加
+    sess.angles.push({ before: dataUrl, after: null });
+    renderBeforeAngleList();
+    document.getElementById('btnSaveBefore').disabled = false;
+    // 次のアクション選択パネルを表示
+    document.getElementById('nextPanelTitle').textContent = `アングル ${sess.angles.length} を記録しました`;
+    document.getElementById('nextPanelOverlay').classList.add('open');
+  } else {
+    // Afterをペアに記録
+    sess.angles[sess.currentAngleIdx].after = dataUrl;
+    renderAfterAngleList();
+    // 次のアングルへ or 完了
+    const nextIdx = sess.currentAngleIdx + 1;
+    if (nextIdx < sess.angles.length) {
+      sess.currentAngleIdx = nextIdx;
+      updateAfterView();
+    } else {
+      // 全アングル完了 → After写真をサイトに保存してコメントへ
+      stopCameras();
+      const site = getSite(sess.siteId);
+      site.angles = sess.angles;
+      site.updatedAt = new Date().toISOString();
+      upsertSite(site);
+      document.getElementById('siteComment').value = site.comment || '';
+      updateCharCount();
+      updateStepBar(4, 3);
+      showScreen(5);
+    }
+  }
+}
+
+// ===== BEFORE ANGLE UI =====
+function updateBeforeAngleCounter() {
+  document.getElementById('beforeAngleCounter').textContent = `アングル ${sess.angles.length + 1}`;
+}
+
+function renderBeforeAngleList() {
+  const c = document.getElementById('beforeAngleList');
+  c.innerHTML = '';
+  sess.angles.forEach((a, i) => {
+    const row = document.createElement('div');
+    row.className = 'angle-row complete';
+    row.innerHTML = `
+      <div class="angle-num">${i+1}</div>
+      <div class="angle-thumb before-thumb"><img src="${a.before}"><div class="angle-thumb-label">BEFORE</div></div>
+      <div class="angle-arrow">✓</div>
+      <div class="angle-status ok">記録済み</div>`;
+    c.appendChild(row);
+  });
+}
+
+function addAnotherAngle() {
+  document.getElementById('nextPanelOverlay').classList.remove('open');
+  updateBeforeAngleCounter();
+}
+
+function finishBeforeFromPanel() {
+  document.getElementById('nextPanelOverlay').classList.remove('open');
+  saveBefore();
+}
+
+// ===== SCREEN 3: Before保存 =====
+function saveBefore() {
+  stopCameras();
+  const site = {
+    id: sess.siteId,
+    staffName: document.getElementById('staffName').value.trim(),
+    siteName: document.getElementById('siteName').value.trim(),
+    workType: document.getElementById('workType').value,
+    angles: sess.angles,
+    comment: '',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  upsertSite(site);
+  showScreen(0);
+}
+
+// ===== AFTER ANGLE UI =====
+function updateAfterView() {
+  const idx = sess.currentAngleIdx;
+  const total = sess.angles.length;
+  document.getElementById('afterAngleCounter').textContent = `アングル ${idx+1} / ${total}`;
+  document.getElementById('afterDesc').textContent = `アングル ${idx+1} のAfterを撮影してください。`;
+  document.getElementById('beforeGuideImg').src = sess.angles[idx].before;
+}
+
+function renderAfterAngleList() {
+  const c = document.getElementById('afterAngleList');
+  c.innerHTML = '';
+  sess.angles.forEach((a, i) => {
+    const done = !!a.after;
+    const row = document.createElement('div');
+    row.className = 'angle-row' + (done ? ' complete' : '');
+    row.innerHTML = `
+      <div class="angle-num">${i+1}</div>
+      <div class="angle-thumb before-thumb"><img src="${a.before}"><div class="angle-thumb-label">BEFORE</div></div>
+      <div class="angle-arrow">→</div>
+      <div class="angle-thumb ${done?'after-thumb':'empty-thumb'}">
+        ${done ? `<img src="${a.after}"><div class="angle-thumb-label">AFTER</div>` : '📷'}
+      </div>
+      <div class="angle-status ${done?'ok':'pending'}">${done?'完了':'待ち'}</div>`;
+    c.appendChild(row);
+  });
+}
+
+// ===== SCREEN 5: コメント =====
+function updateCharCount() {
+  const v = document.getElementById('siteComment').value;
+  document.getElementById('charCount').textContent = v.length;
+  document.getElementById('btnToConfirm').disabled = v.trim().length === 0;
+}
+
+function goNext5() {
+  const comment = document.getElementById('siteComment').value.trim();
+  const site = getSite(sess.siteId);
+  site.comment = comment;
+  site.updatedAt = new Date().toISOString();
+  upsertSite(site);
+  buildConfirmScreen(site);
+  updateStepBar(4, 4);
+  showScreen(6);
+}
+
+function goBackToAfter() {
+  stopCameras();
+  const site = getSite(sess.siteId);
+  sess.angles = site.angles || [];
+  // After未完了のアングルから再開
+  sess.currentAngleIdx = sess.angles.findIndex(a => !a.after);
+  if (sess.currentAngleIdx < 0) sess.currentAngleIdx = sess.angles.length - 1;
+  document.getElementById('angleHint4').textContent = ANGLE_HINTS[site.workType] || '';
+  updateAfterView();
+  renderAfterAngleList();
+  updateStepBar(4, 2);
+  showScreen(4);
+  startCamera2();
+}
+
+// ===== SCREEN 6: 確認 =====
+function buildConfirmScreen(site) {
+  document.getElementById('confStaff').textContent = site.staffName;
+  document.getElementById('confSite').textContent = site.siteName;
+  document.getElementById('confWork').textContent = site.workType;
+  document.getElementById('confDate').textContent = fmtDate(site.createdAt);
+  document.getElementById('confAngles').textContent = `${(site.angles||[]).length} アングル`;
+  document.getElementById('confComment').textContent = site.comment || '';
+  const folder = `${site.siteName}_${site.workType}_${getTodayStr()}`;
+  document.getElementById('folderPath').textContent = `Dropbox / ビフォーアフター / ${site.staffName} / ${folder} /`;
+
+  // ペアグリッド
+  const g = document.getElementById('confPairGrid');
+  g.innerHTML = '';
+  (site.angles||[]).forEach((a, i) => {
+    const row = document.createElement('div');
+    row.className = 'pair-row';
+    row.innerHTML = `
+      <div class="pair-num">${i+1}</div>
+      <div class="pair-img"><img src="${a.before}"></div>
+      <div class="pair-arrow">→</div>
+      <div class="pair-img">${a.after ? `<img src="${a.after}">` : '<div style="background:var(--surface2);width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--text-sub);font-size:12px;">未撮影</div>'}</div>`;
+    g.appendChild(row);
+  });
+}
+
+function goBackToComment() {
+  const site = getSite(sess.siteId);
+  document.getElementById('siteComment').value = site.comment || '';
+  updateCharCount();
+  updateStepBar(4, 3);
+  showScreen(5);
+}
+
+// ===== DOWNLOAD =====
+async function downloadAll() {
+  const site = getSite(sess.siteId);
+  const folder = `${site.siteName}_${site.workType}_${getTodayStr()}`;
+  const all = [];
+  (site.angles||[]).forEach((a, i) => {
+    all.push({ src: a.before, name: `angle${String(i+1).padStart(2,'0')}_before.jpg` });
+    if (a.after) all.push({ src: a.after, name: `angle${String(i+1).padStart(2,'0')}_after.jpg` });
+  });
+
+  // 写真ダウンロード
+  for (let i = 0; i < all.length; i++) {
+    await new Promise(r => setTimeout(r, i*300));
+    const a = document.createElement('a');
+    a.href = all[i].src; a.download = `${folder}_${all[i].name}`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  }
+
+  // コメントをtxtとして出力
+  await new Promise(r => setTimeout(r, all.length * 300));
+  const d = new Date(site.createdAt);
+  const dateStr = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
+  const txt = [
+    '■ 現場コメント',
+    '',
+    `担当者　：${site.staffName}`,
+    `現場名　：${site.siteName}`,
+    `工事種別：${site.workType}`,
+    `撮影日　：${dateStr}`,
+    `アングル：${(site.angles||[]).length}アングル`,
+    '',
+    '\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500',
+    '',
+    site.comment || '',
+    '',
+    '\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500',
+    `出力日時：${new Date().toLocaleString('ja-JP')}`,
+  ].join('\n');
+
+  const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const ta = document.createElement('a');
+  ta.href = url; ta.download = `${folder}_comment.txt`;
+  document.body.appendChild(ta); ta.click(); document.body.removeChild(ta);
+  URL.revokeObjectURL(url);
+
+  upsertSite({ ...site, downloadedAt: new Date().toISOString() });
+  document.getElementById('completeDesc').textContent =
+    `${(site.angles||[]).length}アングル分（計${all.length}枚）＋コメントtxtを保存しました。\nDropboxの所定フォルダへ移動してください。`;
+  document.getElementById('completePath').textContent =
+    `Dropbox / ビフォーアフター /\n${site.staffName} /\n${folder} /`;
+  showScreen(7);
+}
+
+// ===== DELETE =====
+function confirmDeleteSite() {
+  if (!confirm('この現場データをアプリから削除しますか？\n（ダウンロード済みの写真ファイルは削除されません）')) return;
+  deleteSite(sess.siteId);
+  showScreen(0);
+}
+
+// ===== INIT =====
+renderSiteList();
+</script>
+</body>
+</html>
