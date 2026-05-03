@@ -129,11 +129,26 @@
 
   /* 横向き時のカメラ画面最適化 */
   @media (orientation: landscape) {
-    .camera-stage { aspect-ratio: 16/9; }
-    .screen-title { font-size: 18px; margin-bottom: 4px; }
-    .screen-desc { margin-bottom: 12px; }
-    .camera-hint { margin-bottom: 8px; }
-    .shutter-area { margin-bottom: 8px; }
+    .cam-title, .cam-desc { display: none; }
+    .cam-layout { display: flex; gap: 12px; align-items: stretch; }
+    .cam-main { flex: 1; min-width: 0; }
+    .cam-main .camera-stage { aspect-ratio: auto; height: calc(100dvh - 80px); margin-bottom: 4px; }
+    .cam-controls { display: flex !important; flex-direction: column; align-items: center; justify-content: space-between; width: 72px; flex-shrink: 0; padding: 8px 0; }
+    .zoom-vertical { display: flex !important; flex-direction: column; align-items: center; gap: 6px; flex: 1; }
+    .zoom-val { font-size: 10px; font-family: 'DM Mono', monospace; color: var(--text-sub); }
+    .zoom-slider-v { -webkit-appearance: slider-vertical; writing-mode: vertical-lr; direction: rtl; width: 28px; flex: 1; max-height: 160px; cursor: pointer; }
+    .cam-btns { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .portrait-only { display: none !important; }
+    .angle-list { display: none; }
+    .btn-stack { display: none; }
+  }
+
+  @media (orientation: portrait) {
+    .cam-layout { display: block; }
+    .cam-controls { display: none; }
+    .zoom-vertical { display: none; }
+    .portrait-only { display: flex; }
+    .shutter-area.portrait-only { display: flex; }
   }
 
   /* ANGLE LIST */
@@ -294,23 +309,39 @@
 <!-- SCREEN 3: Before撮影 -->
 <div class="screen" id="screen3">
   <div class="screen-inner safe-bottom">
-    <p class="screen-title">Before撮影</p>
-    <p class="screen-desc">アングルを決めて撮影してください。</p>
-    <div class="camera-stage">
-      <video id="videoEl" autoplay playsinline muted></video>
-      <div class="camera-overlay">
-        <div class="guide-frame"></div><div class="guide-cross"></div>
-        <div class="camera-badge badge-before">BEFORE</div>
-        <div class="angle-counter" id="beforeAngleCounter">アングル 1</div>
+    <p class="screen-title cam-title">Before撮影</p>
+    <p class="screen-desc cam-desc">アングルを決めて撮影してください。</p>
+    <div class="cam-layout">
+      <div class="cam-main">
+        <div class="camera-stage">
+          <video id="videoEl" autoplay playsinline muted></video>
+          <div class="camera-overlay">
+            <div class="guide-frame"></div><div class="guide-cross"></div>
+            <div class="camera-badge badge-before">BEFORE</div>
+            <div class="angle-counter" id="beforeAngleCounter">アングル 1</div>
+          </div>
+        </div>
+        <p class="camera-hint" id="angleHint3"></p>
+      </div>
+      <div class="cam-controls">
+        <div class="zoom-vertical">
+          <span class="zoom-val" id="zoomLabel1">×1.0</span>
+          <input type="range" class="zoom-slider-v" id="zoomSlider1" min="1" max="5" step="0.1" value="1" orient="vertical" oninput="applyZoom('before', this.value)">
+          <span style="font-size:13px;">🔍</span>
+        </div>
+        <div class="cam-btns">
+          <div class="flip-btn" onclick="flipCamera()">↺</div>
+          <div class="btn-shutter" onclick="capturePhoto('before')"></div>
+        </div>
       </div>
     </div>
-    <p class="camera-hint" id="angleHint3"></p>
-    <div class="zoom-bar">
+    <!-- 縦向き時のみ表示 -->
+    <div class="zoom-bar portrait-only">
       <span style="font-size:11px;color:var(--text-sub);">🔍</span>
-      <input type="range" class="zoom-slider" id="zoomSlider1" min="1" max="5" step="0.1" value="1" oninput="applyZoom('before', this.value)">
-      <span class="zoom-label" id="zoomLabel1">×1.0</span>
+      <input type="range" class="zoom-slider" id="zoomSlider1p" min="1" max="5" step="0.1" value="1" oninput="applyZoom('before', this.value); syncSlider('zoomSlider1', this.value, 'zoomLabel1')">
+      <span class="zoom-label" id="zoomLabel1p">×1.0</span>
     </div>
-    <div class="shutter-area">
+    <div class="shutter-area portrait-only">
       <div class="flip-btn" onclick="flipCamera()">↺</div>
       <div class="btn-shutter" onclick="capturePhoto('before')"></div>
       <div style="width:44px"></div>
@@ -326,27 +357,43 @@
 <!-- SCREEN 4: After撮影 -->
 <div class="screen" id="screen4">
   <div class="screen-inner safe-bottom">
-    <p class="screen-title">After撮影</p>
-    <p class="screen-desc" id="afterDesc">Beforeと同じアングルで撮影してください。</p>
-    <div class="camera-stage">
-      <video id="videoEl2" autoplay playsinline muted></video>
-      <div class="camera-overlay">
-        <div class="guide-frame"></div><div class="guide-cross"></div>
-        <div class="camera-badge badge-after-cam">AFTER</div>
-        <div class="angle-counter" id="afterAngleCounter">アングル 1 / 1</div>
-        <div class="before-guide-overlay" id="beforeGuideOverlay">
-          <img id="beforeGuideImg" src="" alt="">
-          <div class="before-guide-label">BEFORE</div>
+    <p class="screen-title cam-title">After撮影</p>
+    <p class="screen-desc cam-desc" id="afterDesc">Beforeと同じアングルで撮影してください。</p>
+    <div class="cam-layout">
+      <div class="cam-main">
+        <div class="camera-stage">
+          <video id="videoEl2" autoplay playsinline muted></video>
+          <div class="camera-overlay">
+            <div class="guide-frame"></div><div class="guide-cross"></div>
+            <div class="camera-badge badge-after-cam">AFTER</div>
+            <div class="angle-counter" id="afterAngleCounter">アングル 1 / 1</div>
+            <div class="before-guide-overlay" id="beforeGuideOverlay">
+              <img id="beforeGuideImg" src="" alt="">
+              <div class="before-guide-label">BEFORE</div>
+            </div>
+          </div>
+        </div>
+        <p class="camera-hint" id="angleHint4"></p>
+      </div>
+      <div class="cam-controls">
+        <div class="zoom-vertical">
+          <span class="zoom-val" id="zoomLabel2">×1.0</span>
+          <input type="range" class="zoom-slider-v" id="zoomSlider2" min="1" max="5" step="0.1" value="1" orient="vertical" oninput="applyZoom('after', this.value)">
+          <span style="font-size:13px;">🔍</span>
+        </div>
+        <div class="cam-btns">
+          <div class="flip-btn" onclick="flipCamera2()">↺</div>
+          <div class="btn-shutter" onclick="capturePhoto('after')"></div>
         </div>
       </div>
     </div>
-    <p class="camera-hint" id="angleHint4"></p>
-    <div class="zoom-bar">
+    <!-- 縦向き時のみ表示 -->
+    <div class="zoom-bar portrait-only">
       <span style="font-size:11px;color:var(--text-sub);">🔍</span>
-      <input type="range" class="zoom-slider" id="zoomSlider2" min="1" max="5" step="0.1" value="1" oninput="applyZoom('after', this.value)">
-      <span class="zoom-label" id="zoomLabel2">×1.0</span>
+      <input type="range" class="zoom-slider" id="zoomSlider2p" min="1" max="5" step="0.1" value="1" oninput="applyZoom('after', this.value); syncSlider('zoomSlider2', this.value, 'zoomLabel2')">
+      <span class="zoom-label" id="zoomLabel2p">×1.0</span>
     </div>
-    <div class="shutter-area">
+    <div class="shutter-area portrait-only">
       <div class="flip-btn" onclick="flipCamera2()">↺</div>
       <div class="btn-shutter" onclick="capturePhoto('after')"></div>
       <div style="width:44px"></div>
@@ -738,36 +785,54 @@ function goNext2() {
 // ===== CAMERAS =====
 async function startCamera() {
   try {
-    if (sess.stream) sess.stream.getTracks().forEach(t=>t.stop());
+    if (sess.stream) {
+      sess.stream.getTracks().forEach(t => t.stop());
+      sess.stream = null;
+    }
+    const video = document.getElementById('videoEl');
+    video.srcObject = null;
+    await new Promise(r => setTimeout(r, 100));
     sess.stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: sess.facingMode, width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false
     });
-    const video = document.getElementById('videoEl');
     video.srcObject = sess.stream;
-    // ズームスライダーリセット
     const slider = document.getElementById('zoomSlider1');
-    if (slider) { slider.value = 1; document.getElementById('zoomLabel1').textContent = '×1.0'; }
-    sess.zoom1 = 1;
+    const sliderP = document.getElementById('zoomSlider1p');
+    if (slider) slider.value = 1;
+    if (sliderP) sliderP.value = 1;
+    ['zoomLabel1','zoomLabel1p'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = '×1.0'; });
   } catch(e) { alert('カメラの起動に失敗しました。\n'+e.message); }
 }
 async function startCamera2() {
   try {
-    if (sess.stream2) sess.stream2.getTracks().forEach(t=>t.stop());
+    if (sess.stream2) {
+      sess.stream2.getTracks().forEach(t => t.stop());
+      sess.stream2 = null;
+    }
+    const video = document.getElementById('videoEl2');
+    video.srcObject = null;
+    await new Promise(r => setTimeout(r, 100));
     sess.stream2 = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: sess.facingMode, width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false
     });
-    const video = document.getElementById('videoEl2');
     video.srcObject = sess.stream2;
-    // ズームスライダーリセット
     const slider = document.getElementById('zoomSlider2');
-    if (slider) { slider.value = 1; document.getElementById('zoomLabel2').textContent = '×1.0'; }
-    sess.zoom2 = 1;
+    const sliderP = document.getElementById('zoomSlider2p');
+    if (slider) slider.value = 1;
+    if (sliderP) sliderP.value = 1;
+    ['zoomLabel2','zoomLabel2p'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = '×1.0'; });
   } catch(e) { alert('カメラの起動に失敗しました。\n'+e.message); }
 }
 async function flipCamera() { sess.facingMode = sess.facingMode==='environment'?'user':'environment'; await startCamera(); }
 async function flipCamera2() { sess.facingMode = sess.facingMode==='environment'?'user':'environment'; await startCamera2(); }
 
-// ===== ZOOM =====
+// スライダー同期（縦横共通）
+function syncSlider(sliderId, val, labelId) {
+  const el = document.getElementById(sliderId);
+  const lb = document.getElementById(labelId);
+  if (el) el.value = val;
+  if (lb) lb.textContent = `×${parseFloat(val).toFixed(1)}`;
+}
 async function applyZoom(target, val) {
   const zoom = parseFloat(val);
   const isAfter = target === 'after';
@@ -825,27 +890,32 @@ async function capturePhoto(type) {
   await new Promise(r => setTimeout(r, 150));
   stage.style.opacity = '1';
 
-  // canvasに描画（小さめサイズでメモリ節約）
-  const canvas = document.getElementById('canvasEl');
+  // 毎回新しいcanvasを生成（使い回しによるメモリ蓄積を防ぐ）
   const vw = video.videoWidth || 1280;
   const vh = video.videoHeight || 960;
-  // 最大800px幅に縮小してメモリ削減
   const scale = Math.min(1, 800 / vw);
-  canvas.width  = Math.round(vw * scale);
-  canvas.height = Math.round(vh * scale);
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const w = Math.round(vw * scale);
+  const h = Math.round(vh * scale);
 
-  // 非同期でtoDataURL実行（UIスレッドをブロックしない）
-  await new Promise(r => setTimeout(r, 50));
-  const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, w, h);
+
+  // iOS向け：少し待機してからtoDataURL実行
+  await new Promise(r => setTimeout(r, 100));
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+  // canvasを即座に破棄してメモリ解放
+  canvas.width = 0;
+  canvas.height = 0;
+
+  await new Promise(r => setTimeout(r, 80));
 
   pending = { dataUrl, type };
   document.getElementById('panelPreviewImg').src = dataUrl;
   document.getElementById('panelTitle').textContent = type==='before' ? 'この写真で確定しますか？（Before）' : 'この写真で確定しますか？（After）';
-
-  // パネル表示前に少し待機
-  await new Promise(r => setTimeout(r, 80));
   document.getElementById('photoConfirmOverlay').classList.add('open');
 }
 
