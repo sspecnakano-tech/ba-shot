@@ -97,7 +97,7 @@
   .progress-label { font-size: 12px; font-family: 'DM Mono', monospace; color: var(--text-sub); white-space: nowrap; }
 
   /* CAMERA */
-  .camera-stage { background: var(--surface); border-radius: var(--radius); overflow: hidden; position: relative; aspect-ratio: 4/3; margin-bottom: 16px; border: 1.5px solid var(--border); }
+  .camera-stage { background: #000; border-radius: var(--radius); overflow: hidden; position: relative; width: 100%; aspect-ratio: 4/3; margin-bottom: 8px; border: 1.5px solid var(--border); }
   .camera-stage video { width: 100%; height: 100%; object-fit: cover; display: block; }
   .camera-overlay { position: absolute; inset: 0; pointer-events: none; }
   .guide-frame { position: absolute; inset: 12%; border: 2px dashed rgba(255,255,255,0.3); border-radius: 8px; }
@@ -108,10 +108,17 @@
   .camera-badge { position: absolute; top: 10px; left: 10px; font-size: 10px; font-family: 'DM Mono', monospace; letter-spacing: 0.08em; padding: 4px 10px; border-radius: 20px; font-weight: 500; }
   .badge-before { background: rgba(96,165,250,0.9); color: #fff; }
   .badge-after-cam { background: rgba(249,115,22,0.9); color: #fff; }
-  .before-guide-overlay { position: absolute; bottom: 10px; left: 10px; width: 88px; border-radius: 8px; overflow: hidden; border: 2px solid var(--before-color); background: var(--bg); box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+  .before-guide-overlay { position: absolute; bottom: 10px; left: 10px; width: 80px; border-radius: 8px; overflow: hidden; border: 2px solid var(--before-color); background: var(--bg); box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
   .before-guide-overlay img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; }
   .before-guide-label { font-size: 9px; font-family: 'DM Mono', monospace; color: var(--before-color); background: rgba(0,0,0,0.75); padding: 3px 6px; text-align: center; }
   .angle-counter { position: absolute; top: 10px; right: 10px; font-size: 11px; font-family: 'DM Mono', monospace; background: rgba(0,0,0,0.65); color: #fff; padding: 4px 10px; border-radius: 20px; letter-spacing: 0.05em; }
+
+  /* ZOOM SLIDER */
+  .zoom-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding: 0 4px; }
+  .zoom-label { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text-sub); width: 36px; text-align: right; flex-shrink: 0; }
+  .zoom-slider { flex: 1; -webkit-appearance: none; appearance: none; height: 4px; border-radius: 2px; background: var(--border); outline: none; }
+  .zoom-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid #0f0f11; }
+
   .camera-hint { font-size: 12px; color: var(--text-sub); text-align: center; margin-bottom: 12px; line-height: 1.5; }
   .shutter-area { display: flex; align-items: center; justify-content: center; gap: 24px; margin-bottom: 16px; }
   .btn-shutter { width: 72px; height: 72px; border-radius: 50%; border: 4px solid var(--text); background: rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; position: relative; }
@@ -119,6 +126,15 @@
   .btn-shutter:active::after { transform: scale(0.88); }
   .flip-btn { width: 44px; height: 44px; border-radius: 50%; background: var(--surface2); border: 1.5px solid var(--border); color: var(--text); font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
   .flip-btn:active { transform: scale(0.9); }
+
+  /* 横向き時のカメラ画面最適化 */
+  @media (orientation: landscape) {
+    .camera-stage { aspect-ratio: 16/9; }
+    .screen-title { font-size: 18px; margin-bottom: 4px; }
+    .screen-desc { margin-bottom: 12px; }
+    .camera-hint { margin-bottom: 8px; }
+    .shutter-area { margin-bottom: 8px; }
+  }
 
   /* ANGLE LIST */
   .angle-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
@@ -289,6 +305,11 @@
       </div>
     </div>
     <p class="camera-hint" id="angleHint3"></p>
+    <div class="zoom-bar">
+      <span style="font-size:11px;color:var(--text-sub);">🔍</span>
+      <input type="range" class="zoom-slider" id="zoomSlider1" min="1" max="5" step="0.1" value="1" oninput="applyZoom('before', this.value)">
+      <span class="zoom-label" id="zoomLabel1">×1.0</span>
+    </div>
     <div class="shutter-area">
       <div class="flip-btn" onclick="flipCamera()">↺</div>
       <div class="btn-shutter" onclick="capturePhoto('before')"></div>
@@ -320,6 +341,11 @@
       </div>
     </div>
     <p class="camera-hint" id="angleHint4"></p>
+    <div class="zoom-bar">
+      <span style="font-size:11px;color:var(--text-sub);">🔍</span>
+      <input type="range" class="zoom-slider" id="zoomSlider2" min="1" max="5" step="0.1" value="1" oninput="applyZoom('after', this.value)">
+      <span class="zoom-label" id="zoomLabel2">×1.0</span>
+    </div>
     <div class="shutter-area">
       <div class="flip-btn" onclick="flipCamera2()">↺</div>
       <div class="btn-shutter" onclick="capturePhoto('after')"></div>
@@ -718,7 +744,10 @@ async function startCamera() {
     });
     const video = document.getElementById('videoEl');
     video.srcObject = sess.stream;
-    setupPinchZoom(video, sess.stream);
+    // ズームスライダーリセット
+    const slider = document.getElementById('zoomSlider1');
+    if (slider) { slider.value = 1; document.getElementById('zoomLabel1').textContent = '×1.0'; }
+    sess.zoom1 = 1;
   } catch(e) { alert('カメラの起動に失敗しました。\n'+e.message); }
 }
 async function startCamera2() {
@@ -729,57 +758,45 @@ async function startCamera2() {
     });
     const video = document.getElementById('videoEl2');
     video.srcObject = sess.stream2;
-    setupPinchZoom(video, sess.stream2);
+    // ズームスライダーリセット
+    const slider = document.getElementById('zoomSlider2');
+    if (slider) { slider.value = 1; document.getElementById('zoomLabel2').textContent = '×1.0'; }
+    sess.zoom2 = 1;
   } catch(e) { alert('カメラの起動に失敗しました。\n'+e.message); }
 }
 async function flipCamera() { sess.facingMode = sess.facingMode==='environment'?'user':'environment'; await startCamera(); }
 async function flipCamera2() { sess.facingMode = sess.facingMode==='environment'?'user':'environment'; await startCamera2(); }
 
-// ===== PINCH ZOOM =====
-function setupPinchZoom(videoEl, stream) {
+// ===== ZOOM =====
+async function applyZoom(target, val) {
+  const zoom = parseFloat(val);
+  const isAfter = target === 'after';
+  const labelEl = document.getElementById(isAfter ? 'zoomLabel2' : 'zoomLabel1');
+  labelEl.textContent = `×${zoom.toFixed(1)}`;
+
+  const stream = isAfter ? sess.stream2 : sess.stream;
+  if (!stream) return;
   const track = stream.getVideoTracks()[0];
   if (!track) return;
-  const caps = track.getCapabilities ? track.getCapabilities() : {};
-  const hasZoom = caps.zoom;
 
-  let currentZoom = 1;
-  let lastDistance = null;
-
-  videoEl.addEventListener('touchstart', e => {
-    if (e.touches.length === 2) {
-      lastDistance = Math.hypot(
-        e.touches[0].clientX - e.touches[1].clientX,
-        e.touches[0].clientY - e.touches[1].clientY
-      );
-    }
-  }, { passive: true });
-
-  videoEl.addEventListener('touchmove', async e => {
-    if (e.touches.length !== 2) return;
-    const dist = Math.hypot(
-      e.touches[0].clientX - e.touches[1].clientX,
-      e.touches[0].clientY - e.touches[1].clientY
-    );
-    if (!lastDistance) { lastDistance = dist; return; }
-    const delta = dist / lastDistance;
-    lastDistance = dist;
-
-    if (hasZoom) {
+  try {
+    const caps = track.getCapabilities ? track.getCapabilities() : {};
+    if (caps.zoom) {
       const min = caps.zoom.min || 1;
-      const max = caps.zoom.max || 8;
-      currentZoom = Math.min(max, Math.max(min, currentZoom * delta));
-      try { await track.applyConstraints({ advanced: [{ zoom: currentZoom }] }); } catch {}
+      const max = caps.zoom.max || 5;
+      const z = Math.min(max, Math.max(min, zoom));
+      await track.applyConstraints({ advanced: [{ zoom: z }] });
     } else {
-      // ズームAPIが使えない場合はCSS拡大で代替
-      currentZoom = Math.min(8, Math.max(1, currentZoom * delta));
-      videoEl.style.transform = `scale(${currentZoom})`;
-      videoEl.style.transformOrigin = 'center center';
+      // ズームAPI非対応の場合はCSS拡大
+      const video = document.getElementById(isAfter ? 'videoEl2' : 'videoEl');
+      video.style.transform = zoom > 1 ? `scale(${zoom})` : '';
+      video.style.transformOrigin = 'center center';
     }
-  }, { passive: true });
-
-  videoEl.addEventListener('touchend', e => {
-    if (e.touches.length < 2) lastDistance = null;
-  }, { passive: true });
+  } catch(e) {
+    // CSS拡大にフォールバック
+    const video = document.getElementById(isAfter ? 'videoEl2' : 'videoEl');
+    video.style.transform = zoom > 1 ? `scale(${zoom})` : '';
+  }
 }
 function stopCameras() {
   if (sess.stream) { sess.stream.getTracks().forEach(t=>t.stop()); sess.stream=null; }
@@ -799,17 +816,36 @@ function goBack(to) {
 }
 
 // ===== CAPTURE =====
-function capturePhoto(type) {
+async function capturePhoto(type) {
   const video = type==='before' ? document.getElementById('videoEl') : document.getElementById('videoEl2');
-  const canvas = document.getElementById('canvasEl');
-  canvas.width = video.videoWidth||1280; canvas.height = video.videoHeight||960;
-  canvas.getContext('2d').drawImage(video,0,0);
-  const dataUrl = canvas.toDataURL('image/jpeg',0.9);
+
+  // フラッシュ演出
   const stage = video.closest('.camera-stage');
-  stage.style.opacity='0.4'; setTimeout(()=>{stage.style.opacity='1';},120);
+  stage.style.opacity = '0.3';
+  await new Promise(r => setTimeout(r, 150));
+  stage.style.opacity = '1';
+
+  // canvasに描画（小さめサイズでメモリ節約）
+  const canvas = document.getElementById('canvasEl');
+  const vw = video.videoWidth || 1280;
+  const vh = video.videoHeight || 960;
+  // 最大800px幅に縮小してメモリ削減
+  const scale = Math.min(1, 800 / vw);
+  canvas.width  = Math.round(vw * scale);
+  canvas.height = Math.round(vh * scale);
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  // 非同期でtoDataURL実行（UIスレッドをブロックしない）
+  await new Promise(r => setTimeout(r, 50));
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
   pending = { dataUrl, type };
   document.getElementById('panelPreviewImg').src = dataUrl;
   document.getElementById('panelTitle').textContent = type==='before' ? 'この写真で確定しますか？（Before）' : 'この写真で確定しますか？（After）';
+
+  // パネル表示前に少し待機
+  await new Promise(r => setTimeout(r, 80));
   document.getElementById('photoConfirmOverlay').classList.add('open');
 }
 
