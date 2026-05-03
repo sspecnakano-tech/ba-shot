@@ -783,18 +783,20 @@ function goNext2() {
 async function startCamera() {
   try {
     const video = document.getElementById('videoEl');
-    if (sess.stream) {
-      // ストリーム再利用：再取得せずplay()のみ
-      if (video.srcObject !== sess.stream) video.srcObject = sess.stream;
-      await video.play();
+    if (sess.stream && sess.stream.active) {
+      // ストリーム再利用：srcObjectを確実にセットしてplay
+      video.srcObject = sess.stream;
+      try { await video.play(); } catch(e) { /* autoplay policy等は無視 */ }
       return;
     }
+    // 新規取得
+    if (sess.stream) { sess.stream.getTracks().forEach(t=>t.stop()); sess.stream=null; }
     video.srcObject = null;
     sess.stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: sess.facingMode, width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false
     });
     video.srcObject = sess.stream;
-    await video.play();
+    try { await video.play(); } catch(e) { /* autoplay policy等は無視 */ }
     const slider = document.getElementById('zoomSlider1');
     const sliderP = document.getElementById('zoomSlider1p');
     if (slider) slider.value = 1;
@@ -805,18 +807,20 @@ async function startCamera() {
 async function startCamera2() {
   try {
     const video = document.getElementById('videoEl2');
-    if (sess.stream2) {
-      // ストリーム再利用：再取得せずplay()のみ
-      if (video.srcObject !== sess.stream2) video.srcObject = sess.stream2;
-      await video.play();
+    if (sess.stream2 && sess.stream2.active) {
+      // ストリーム再利用：srcObjectを確実にセットしてplay
+      video.srcObject = sess.stream2;
+      try { await video.play(); } catch(e) { /* autoplay policy等は無視 */ }
       return;
     }
+    // 新規取得
+    if (sess.stream2) { sess.stream2.getTracks().forEach(t=>t.stop()); sess.stream2=null; }
     video.srcObject = null;
     sess.stream2 = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: sess.facingMode, width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false
     });
     video.srcObject = sess.stream2;
-    await video.play();
+    try { await video.play(); } catch(e) { /* autoplay policy等は無視 */ }
     const slider = document.getElementById('zoomSlider2');
     const sliderP = document.getElementById('zoomSlider2p');
     if (slider) slider.value = 1;
@@ -888,7 +892,9 @@ function stopCameras() {
 }
 
 function goBack(to) {
-  stopCameras();
+  // カメラ画面（3=Before, 4=After）から戻る場合はストリームを保持したまま一時停止
+  // それ以外（確認画面等）からの遷移は何もしない
+  pauseCameras();
   if (to === 2) {
     const site = getSite(sess.siteId);
     const wt = sess.checklistMode==='before' ? document.getElementById('workType').value : site.workType;
@@ -910,8 +916,15 @@ async function capturePhoto(type) {
   stage.style.opacity = '1';
 
   // 毎回新しいcanvasを生成（使い回しによるメモリ蓄積を防ぐ）
-  const vw = video.videoWidth || 1280;
-  const vh = video.videoHeight || 960;
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+
+  // カメラ映像が来ていない場合は撮影しない
+  if (!vw || !vh) {
+    alert('カメラ映像を取得中です。少し待ってから再度お試しください。');
+    return;
+  }
+
   const scale = Math.min(1, 800 / vw);
   const w = Math.round(vw * scale);
   const h = Math.round(vh * scale);
@@ -949,7 +962,7 @@ function retakePhoto() {
   document.getElementById('confirmPreviewImg').src = '';
   if (type === 'before') {
     showScreen(3);
-    startCamera1();
+    startCamera();
   } else {
     showScreen(4);
     startCamera2();
