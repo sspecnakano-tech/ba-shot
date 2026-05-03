@@ -74,6 +74,8 @@
   .site-card-tag { font-size: 11px; color: var(--text-sub); font-family: 'DM Mono', monospace; background: var(--surface2); padding: 2px 8px; border-radius: 4px; }
   .site-card-date { font-size: 11px; color: var(--text-sub); }
   .site-card-photos { display: flex; gap: 4px; }
+  .site-card-delete-row { display: flex; justify-content: flex-end; margin-top: 8px; border-top: 1px solid var(--border); padding-top: 8px; }
+  .site-card-delete-btn { background: none; border: 1px solid var(--error,#e55); color: var(--error,#e55); font-size: 12px; padding: 4px 10px; border-radius: 6px; cursor: pointer; }
   .site-card-thumb { width: 48px; height: 36px; border-radius: 4px; overflow: hidden; border: 1px solid var(--border); flex-shrink: 0; }
   .site-card-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .site-card-thumb-more { width: 48px; height: 36px; border-radius: 4px; background: var(--surface2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--text-sub); font-family: 'DM Mono', monospace; }
@@ -673,7 +675,10 @@ function renderSiteList() {
         <div class="site-card-tag">${site.workType}</div>
         <div class="site-card-date">${site.staffName}｜${fmtDate(site.createdAt)}｜${angles.length}アングル</div>
       </div>
-      ${thumbs ? `<div class="site-card-photos">${thumbs}${more}</div>` : ''}`;
+      ${thumbs ? `<div class="site-card-photos">${thumbs}${more}</div>` : ''}
+      <div class="site-card-delete-row">
+        <button class="site-card-delete-btn" onclick="event.stopPropagation();deleteSiteFromList('${site.id}')">✕ 削除</button>
+      </div>`;
     el.appendChild(card);
   });
 }
@@ -914,8 +919,9 @@ async function capturePhoto(type) {
   const vh = video.videoHeight;
 
   // カメラ映像が来ていない場合は撮影しない
-  if (!vw || !vh) {
+  if (!vw || !vh || vw < 10 || vh < 10) {
     alert('カメラ映像を取得中です。少し待ってから再度お試しください。');
+    stage.style.opacity = '1';
     return;
   }
 
@@ -937,7 +943,11 @@ async function capturePhoto(type) {
   canvas.width = 0;
   canvas.height = 0;
 
-  await new Promise(r => setTimeout(r, 80));
+  // dataUrlが空（黒画像）の場合はガード
+  if (!dataUrl || dataUrl.length < 1000) {
+    alert('カメラ映像を取得中です。少し待ってから再度お試しください。');
+    return;
+  }
 
   // カメラを一時停止（ストリームは保持）
   pauseCameras();
@@ -957,9 +967,12 @@ function retakePhoto() {
   if (type === 'before') {
     showScreen(3);
     startCamera();
-  } else {
+  } else if (type === 'after') {
     showScreen(4);
     startCamera2();
+  } else {
+    // typeが不明な場合はカメラ一覧に戻る
+    showScreen(0);
   }
 }
 
@@ -1014,6 +1027,7 @@ function renderBeforeAngleList() {
 function addAnotherAngle() {
   document.getElementById('nextPanelOverlay').classList.remove('open');
   updateBeforeAngleCounter();
+  showScreen(3);
   startCamera();
 }
 
@@ -1232,6 +1246,11 @@ async function saveToDropbox() {
 }
 
 // ===== DELETE =====
+function deleteSiteFromList(id) {
+  if (!confirm('この現場データをアプリから削除しますか？')) return;
+  deleteSite(id);
+  renderSiteList();
+}
 function confirmDeleteSite() {
   if (!confirm('この現場データをアプリから削除しますか？')) return;
   deleteSite(sess.siteId);
