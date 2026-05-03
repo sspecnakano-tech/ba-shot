@@ -208,19 +208,16 @@
   .notice { background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.25); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 12px; color: var(--warn); line-height: 1.6; margin-bottom: 20px; }
   .notice-ok { background: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.25); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 12px; color: var(--accent); line-height: 1.6; margin-bottom: 20px; }
 
-  /* PHOTO CONFIRM PANEL */
-  .photo-confirm-overlay { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); align-items: flex-end; }
-  .photo-confirm-overlay.open { display: flex; animation: overlayIn 0.2s ease; }
-  @keyframes overlayIn { from { opacity:0; } to { opacity:1; } }
-  .photo-confirm-panel { width: 100%; background: var(--surface); border-top: 1.5px solid var(--border); border-radius: 20px 20px 0 0; padding: 16px 20px 32px; transform: translateY(100%); animation: panelUp 0.28s cubic-bezier(0.22,1,0.36,1) forwards; }
-  @keyframes panelUp { to { transform: translateY(0); } }
-  .panel-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 16px; }
-  .panel-title { font-size: 13px; font-family: 'DM Mono', monospace; color: var(--text-sub); letter-spacing: 0.08em; text-align: center; margin-bottom: 14px; }
-  .panel-preview { width: 100%; aspect-ratio: 4/3; border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 16px; border: 1.5px solid var(--border); background: var(--bg); }
-  .panel-preview img { width: 100%; height: 100%; object-fit: contain; display: block; }
-  .panel-btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  /* PHOTO CONFIRM SCREEN */
+  .confirm-preview { width: 100%; aspect-ratio: 4/3; border-radius: var(--radius); overflow: hidden; margin-bottom: 20px; border: 1.5px solid var(--border); background: var(--bg); }
+  .confirm-preview img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .confirm-label { font-size: 12px; font-family: 'DM Mono', monospace; color: var(--text-sub); letter-spacing: 0.08em; text-align: center; margin-bottom: 8px; }
+  .confirm-btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
 
   /* NEXT PANEL */
+  @keyframes overlayIn { from { opacity:0; } to { opacity:1; } }
+  @keyframes panelUp { to { transform: translateY(0); } }
+  .panel-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 16px; }
   .next-panel-overlay { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); align-items: flex-end; }
   .next-panel-overlay.open { display: flex; animation: overlayIn 0.2s ease; }
   .next-panel { width: 100%; background: var(--surface); border-top: 1.5px solid var(--border); border-radius: 20px 20px 0 0; padding: 20px 20px 36px; transform: translateY(100%); animation: panelUp 0.28s cubic-bezier(0.22,1,0.36,1) forwards; }
@@ -509,13 +506,12 @@
   </div>
 </div>
 
-<!-- PHOTO CONFIRM PANEL -->
-<div class="photo-confirm-overlay" id="photoConfirmOverlay">
-  <div class="photo-confirm-panel">
-    <div class="panel-handle"></div>
-    <div class="panel-title" id="panelTitle">この写真で確定しますか？</div>
-    <div class="panel-preview"><img id="panelPreviewImg" src="" alt=""></div>
-    <div class="panel-btn-row">
+<!-- PHOTO CONFIRM SCREEN -->
+<div class="screen" id="screenConfirm">
+  <div class="screen-inner">
+    <div class="confirm-label" id="confirmLabel">BEFORE</div>
+    <div class="confirm-preview"><img id="confirmPreviewImg" src="" alt=""></div>
+    <div class="confirm-btn-row">
       <button class="btn btn-secondary" onclick="retakePhoto()">↺ 撮り直す</button>
       <button class="btn btn-primary" onclick="confirmPhoto()">✓ 確定する</button>
     </div>
@@ -638,7 +634,8 @@ function updateStepBar(total, current) {
 // ===== SHOW SCREEN =====
 function showScreen(n) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen' + n).classList.add('active');
+  const id = (typeof n === 'string') ? n : 'screen' + n;
+  document.getElementById(id).classList.add('active');
   window.scrollTo(0, 0);
   if (n === 0) { updateStepBar(null, 0); renderSiteList(); }
 }
@@ -913,21 +910,34 @@ async function capturePhoto(type) {
 
   await new Promise(r => setTimeout(r, 80));
 
+  // カメラストリームを停止してメモリ解放
+  stopCameras();
+
   pending = { dataUrl, type };
-  document.getElementById('panelPreviewImg').src = dataUrl;
-  document.getElementById('panelTitle').textContent = type==='before' ? 'この写真で確定しますか？（Before）' : 'この写真で確定しますか？（After）';
-  document.getElementById('photoConfirmOverlay').classList.add('open');
+  document.getElementById('confirmPreviewImg').src = dataUrl;
+  document.getElementById('confirmLabel').textContent = type === 'before' ? 'BEFORE — この写真で確定しますか？' : 'AFTER — この写真で確定しますか？';
+  const step = type === 'before' ? 2 : 3;
+  updateStepBar(step + 1, step);
+  showScreen('screenConfirm');
 }
 
 function retakePhoto() {
-  document.getElementById('photoConfirmOverlay').classList.remove('open');
-  pending = { dataUrl:null, type:null };
+  const type = pending.type;
+  pending = { dataUrl: null, type: null };
+  document.getElementById('confirmPreviewImg').src = '';
+  if (type === 'before') {
+    showScreen(3);
+    startCamera1();
+  } else {
+    showScreen(4);
+    startCamera2();
+  }
 }
 
 function confirmPhoto() {
-  document.getElementById('photoConfirmOverlay').classList.remove('open');
   const { dataUrl, type } = pending;
-  pending = { dataUrl:null, type:null };
+  pending = { dataUrl: null, type: null };
+  document.getElementById('confirmPreviewImg').src = '';
   if (type === 'before') {
     sess.angles.push({ before: dataUrl, after: null });
     renderBeforeAngleList();
@@ -940,7 +950,9 @@ function confirmPhoto() {
     const nextIdx = sess.currentAngleIdx + 1;
     if (nextIdx < sess.angles.length) {
       sess.currentAngleIdx = nextIdx;
+      showScreen(4);
       updateAfterView();
+      startCamera2();
     } else {
       stopCameras();
       const site = getSite(sess.siteId);
