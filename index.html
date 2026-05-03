@@ -782,17 +782,19 @@ function goNext2() {
 // ===== CAMERAS =====
 async function startCamera() {
   try {
-    if (sess.stream) {
-      sess.stream.getTracks().forEach(t => t.stop());
-      sess.stream = null;
-    }
     const video = document.getElementById('videoEl');
+    if (sess.stream) {
+      // ストリーム再利用：再取得せずplay()のみ
+      if (video.srcObject !== sess.stream) video.srcObject = sess.stream;
+      await video.play();
+      return;
+    }
     video.srcObject = null;
-    await new Promise(r => setTimeout(r, 100));
     sess.stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: sess.facingMode, width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false
     });
     video.srcObject = sess.stream;
+    await video.play();
     const slider = document.getElementById('zoomSlider1');
     const sliderP = document.getElementById('zoomSlider1p');
     if (slider) slider.value = 1;
@@ -802,17 +804,19 @@ async function startCamera() {
 }
 async function startCamera2() {
   try {
-    if (sess.stream2) {
-      sess.stream2.getTracks().forEach(t => t.stop());
-      sess.stream2 = null;
-    }
     const video = document.getElementById('videoEl2');
+    if (sess.stream2) {
+      // ストリーム再利用：再取得せずplay()のみ
+      if (video.srcObject !== sess.stream2) video.srcObject = sess.stream2;
+      await video.play();
+      return;
+    }
     video.srcObject = null;
-    await new Promise(r => setTimeout(r, 100));
     sess.stream2 = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: sess.facingMode, width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false
     });
     video.srcObject = sess.stream2;
+    await video.play();
     const slider = document.getElementById('zoomSlider2');
     const sliderP = document.getElementById('zoomSlider2p');
     if (slider) slider.value = 1;
@@ -820,8 +824,16 @@ async function startCamera2() {
     ['zoomLabel2','zoomLabel2p'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = '×1.0'; });
   } catch(e) { alert('カメラの起動に失敗しました。\n'+e.message); }
 }
-async function flipCamera() { sess.facingMode = sess.facingMode==='environment'?'user':'environment'; await startCamera(); }
-async function flipCamera2() { sess.facingMode = sess.facingMode==='environment'?'user':'environment'; await startCamera2(); }
+async function flipCamera() {
+  sess.facingMode = sess.facingMode==='environment'?'user':'environment';
+  if (sess.stream) { sess.stream.getTracks().forEach(t=>t.stop()); sess.stream=null; }
+  await startCamera();
+}
+async function flipCamera2() {
+  sess.facingMode = sess.facingMode==='environment'?'user':'environment';
+  if (sess.stream2) { sess.stream2.getTracks().forEach(t=>t.stop()); sess.stream2=null; }
+  await startCamera2();
+}
 
 // スライダー同期（縦横共通）
 function syncSlider(sliderId, val, labelId) {
@@ -860,9 +872,19 @@ async function applyZoom(target, val) {
     video.style.transform = zoom > 1 ? `scale(${zoom})` : '';
   }
 }
+function pauseCameras() {
+  const v1 = document.getElementById('videoEl');
+  const v2 = document.getElementById('videoEl2');
+  if (v1) v1.pause();
+  if (v2) v2.pause();
+}
 function stopCameras() {
   if (sess.stream) { sess.stream.getTracks().forEach(t=>t.stop()); sess.stream=null; }
   if (sess.stream2) { sess.stream2.getTracks().forEach(t=>t.stop()); sess.stream2=null; }
+  const v1 = document.getElementById('videoEl');
+  const v2 = document.getElementById('videoEl2');
+  if (v1) { v1.pause(); v1.srcObject=null; }
+  if (v2) { v2.pause(); v2.srcObject=null; }
 }
 
 function goBack(to) {
@@ -910,8 +932,8 @@ async function capturePhoto(type) {
 
   await new Promise(r => setTimeout(r, 80));
 
-  // カメラストリームを停止してメモリ解放
-  stopCameras();
+  // カメラを一時停止（ストリームは保持）
+  pauseCameras();
 
   pending = { dataUrl, type };
   document.getElementById('confirmPreviewImg').src = dataUrl;
