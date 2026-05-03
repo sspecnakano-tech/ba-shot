@@ -769,6 +769,12 @@ function goNext2() {
     startCamera();
   } else {
     const site = getSite(sess.siteId);
+    sess.angles = site.angles || [];
+    if (sess.angles.length === 0) {
+      alert('Beforeの写真が登録されていません。\nこの現場は削除して作り直してください。');
+      showScreen(0);
+      return;
+    }
     sess.currentAngleIdx = 0;
     document.getElementById('angleHint4').textContent = ANGLE_HINTS[site.workType] || '';
     updateAfterView();
@@ -783,20 +789,15 @@ function goNext2() {
 async function startCamera() {
   try {
     const video = document.getElementById('videoEl');
-    if (sess.stream && sess.stream.active) {
-      // ストリーム再利用：srcObjectを確実にセットしてplay
-      video.srcObject = sess.stream;
-      try { await video.play(); } catch(e) { /* autoplay policy等は無視 */ }
-      return;
-    }
-    // 新規取得
+    // 既存ストリームを必ず停止してから再取得（iOSのストリーム再利用バグを回避）
     if (sess.stream) { sess.stream.getTracks().forEach(t=>t.stop()); sess.stream=null; }
     video.srcObject = null;
+    // iOSがストリーム解放を完了するまで待機
+    await new Promise(r => setTimeout(r, 300));
     sess.stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: sess.facingMode, width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false
     });
     video.srcObject = sess.stream;
-    try { await video.play(); } catch(e) { /* autoplay policy等は無視 */ }
     const slider = document.getElementById('zoomSlider1');
     const sliderP = document.getElementById('zoomSlider1p');
     if (slider) slider.value = 1;
@@ -807,20 +808,13 @@ async function startCamera() {
 async function startCamera2() {
   try {
     const video = document.getElementById('videoEl2');
-    if (sess.stream2 && sess.stream2.active) {
-      // ストリーム再利用：srcObjectを確実にセットしてplay
-      video.srcObject = sess.stream2;
-      try { await video.play(); } catch(e) { /* autoplay policy等は無視 */ }
-      return;
-    }
-    // 新規取得
     if (sess.stream2) { sess.stream2.getTracks().forEach(t=>t.stop()); sess.stream2=null; }
     video.srcObject = null;
+    await new Promise(r => setTimeout(r, 300));
     sess.stream2 = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: sess.facingMode, width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false
     });
     video.srcObject = sess.stream2;
-    try { await video.play(); } catch(e) { /* autoplay policy等は無視 */ }
     const slider = document.getElementById('zoomSlider2');
     const sliderP = document.getElementById('zoomSlider2p');
     if (slider) slider.value = 1;
@@ -879,16 +873,16 @@ async function applyZoom(target, val) {
 function pauseCameras() {
   const v1 = document.getElementById('videoEl');
   const v2 = document.getElementById('videoEl2');
-  if (v1) v1.pause();
-  if (v2) v2.pause();
+  if (v1) { v1.srcObject = null; }
+  if (v2) { v2.srcObject = null; }
 }
 function stopCameras() {
   if (sess.stream) { sess.stream.getTracks().forEach(t=>t.stop()); sess.stream=null; }
   if (sess.stream2) { sess.stream2.getTracks().forEach(t=>t.stop()); sess.stream2=null; }
   const v1 = document.getElementById('videoEl');
   const v2 = document.getElementById('videoEl2');
-  if (v1) { v1.pause(); v1.srcObject=null; }
-  if (v2) { v2.pause(); v2.srcObject=null; }
+  if (v1) { v1.srcObject=null; }
+  if (v2) { v2.srcObject=null; }
 }
 
 function goBack(to) {
@@ -1020,6 +1014,7 @@ function renderBeforeAngleList() {
 function addAnotherAngle() {
   document.getElementById('nextPanelOverlay').classList.remove('open');
   updateBeforeAngleCounter();
+  startCamera();
 }
 
 function finishBeforeFromPanel() {
