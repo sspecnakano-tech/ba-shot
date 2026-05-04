@@ -205,6 +205,7 @@
   .btn-secondary { background: var(--surface); color: var(--text); border: 1.5px solid var(--border); }
   .btn-before { background: rgba(96,165,250,0.15); color: var(--before-color); border: 1.5px solid var(--before-color); }
   .btn-danger { background: rgba(248,113,113,0.12); color: var(--danger); border: 1.5px solid var(--danger); }
+  .btn-dev { background: rgba(250,204,21,0.12); color: #ca8a04; border: 1.5px dashed #ca8a04; font-size: 13px; }
   .btn-stack { display: flex; flex-direction: column; gap: 12px; }
 
   .notice { background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.25); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 12px; color: var(--warn); line-height: 1.6; margin-bottom: 20px; }
@@ -300,6 +301,7 @@
     <div id="checklistContainer"></div>
     <div class="btn-stack">
       <button class="btn btn-primary" id="btnToCamera" onclick="goNext2()" disabled></button>
+      <button class="btn btn-dev" onclick="devCheckAll()">⚡ 開発用：一括確認</button>
       <button class="btn btn-secondary" onclick="goBackFromChecklist()">← 戻る</button>
     </div>
   </div>
@@ -751,6 +753,12 @@ function buildChecklist(workType) {
   updateProgress();
 }
 
+function devCheckAll() {
+  checkStates = checkStates.map(() => true);
+  document.querySelectorAll('#checklistContainer .check-item').forEach(el => el.classList.add('checked'));
+  updateProgress();
+}
+
 function updateProgress() {
   const total = checkStates.length, done = checkStates.filter(Boolean).length;
   document.getElementById('progressBar').style.width = (total>0?done/total*100:0)+'%';
@@ -981,6 +989,7 @@ function confirmPhoto() {
   pending = { dataUrl: null, type: null };
   document.getElementById('confirmPreviewImg').src = '';
   if (type === 'before') {
+    showScreen(3);
     sess.angles.push({ before: dataUrl, after: null });
     renderBeforeAngleList();
     document.getElementById('btnSaveBefore').disabled = false;
