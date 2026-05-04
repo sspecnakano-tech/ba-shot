@@ -361,8 +361,21 @@
     <p class="screen-desc">撮影するアングルをタップしてください。撮影済みはタップで撮り直せます。</p>
     <div class="angle-list" id="afterAngleListMain"></div>
     <div class="btn-stack">
-      <button class="btn btn-primary" onclick="goToComment()">コメント入力へ進む →</button>
+      <button class="btn btn-primary" onclick="goToPreview()">撮影済みペアを確認する →</button>
       <button class="btn btn-secondary" onclick="showScreen(0)">← 一覧に戻る</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 4b: After撮影 ペア確認 -->
+<div class="screen" id="screen4b">
+  <div class="screen-inner safe-bottom">
+    <p class="screen-title">撮影ペア確認</p>
+    <p class="screen-desc">保存されるBefore/Afterペアを確認してください。</p>
+    <div class="pair-grid" id="previewPairGrid"></div>
+    <div class="btn-stack" style="margin-top:20px;">
+      <button class="btn btn-primary" onclick="goToComment()">コメント入力へ進む →</button>
+      <button class="btn btn-secondary" onclick="goBackToAfterList()">← 撮影に戻る</button>
     </div>
   </div>
 </div>
@@ -611,9 +624,10 @@ function deleteSite(id) { saveSites(loadSites().filter(s => s.id !== id)); }
 // ===== STATUS =====
 function getStatus(site) {
   const angles = site.angles || [];
-  const allAfterDone = angles.length > 0 && angles.every(a => a.after);
-  if (allAfterDone && site.comment) return 'done';
-  if (allAfterDone) return 'comment';
+  const hasPair = angles.some(a => a.after);
+  const allDone = angles.length > 0 && angles.every(a => a.after);
+  if (hasPair && site.comment) return 'done';
+  if (hasPair) return 'comment';
   return 'after';
 }
 const STATUS_LABELS = { after: 'After写真待ち', comment: 'コメント入力待ち', done: '完了' };
@@ -692,7 +706,8 @@ function openSite(id) {
   const st = getStatus(site);
   if (st === 'after') {
     sess.checklistMode = 'after';
-    sess.angles = site.angles.map(a => ({ before: a.before, after: null }));
+    // 保存済みAfterデータを保持したまま引き継ぐ
+    sess.angles = site.angles.map(a => ({ before: a.before, after: a.after || null }));
     sess.currentAngleIdx = 0;
     document.getElementById('checklistDesc').textContent = `${site.siteName} のAfter撮影前に確認してください。`;
     document.getElementById('btnToCamera').textContent = '✓ チェック完了 — After撮影へ';
@@ -1068,6 +1083,34 @@ function startAfterShot(idx) {
 function backToAfterList() {
   pauseCameras();
   renderAfterAngleListMain();
+  showScreen('screen4a');
+}
+
+function goToPreview() {
+  const pairedAngles = sess.angles.filter(a => a.after);
+  if (pairedAngles.length === 0) {
+    alert('撮影済みのAfter写真がありません。\n少なくとも1アングル撮影してください。');
+    return;
+  }
+  const g = document.getElementById('previewPairGrid');
+  g.innerHTML = '';
+  pairedAngles.forEach((a, i) => {
+    const row = document.createElement('div');
+    row.className = 'pair-row';
+    row.innerHTML = `
+      <div class="pair-num">${i+1}</div>
+      <div class="pair-img"><img src="${a.before}"></div>
+      <div class="pair-arrow">→</div>
+      <div class="pair-img"><img src="${a.after}"></div>`;
+    g.appendChild(row);
+  });
+  updateStepBar(4, 3);
+  showScreen('screen4b');
+}
+
+function goBackToAfterList() {
+  renderAfterAngleListMain();
+  updateStepBar(4, 2);
   showScreen('screen4a');
 }
 
