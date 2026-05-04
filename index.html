@@ -74,6 +74,10 @@
   .site-card-tag { font-size: 11px; color: var(--text-sub); font-family: 'DM Mono', monospace; background: var(--surface2); padding: 2px 8px; border-radius: 4px; }
   .site-card-date { font-size: 11px; color: var(--text-sub); }
   .site-card-photos { display: flex; gap: 4px; }
+  .after-selectable { cursor: pointer; transition: background 0.15s; }
+  .after-selectable:active { background: var(--surface2); }
+  .no-shot { font-size: 11px; color: var(--text-sub); display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+  .angle-status.skip { color: var(--text-sub); }
   .site-card-delete-row { display: flex; justify-content: flex-end; margin-top: 8px; border-top: 1px solid var(--border); padding-top: 8px; }
   .site-card-delete-btn { background: none; border: 1px solid var(--error,#e55); color: var(--error,#e55); font-size: 12px; padding: 4px 10px; border-radius: 6px; cursor: pointer; }
   .site-card-thumb { width: 48px; height: 36px; border-radius: 4px; overflow: hidden; border: 1px solid var(--border); flex-shrink: 0; }
@@ -350,7 +354,20 @@
   </div>
 </div>
 
-<!-- SCREEN 4: After撮影 -->
+<!-- SCREEN 4a: After撮影 アングル選択リスト -->
+<div class="screen" id="screen4a">
+  <div class="screen-inner safe-bottom">
+    <p class="screen-title">After撮影</p>
+    <p class="screen-desc">撮影するアングルをタップしてください。撮影済みはタップで撮り直せます。</p>
+    <div class="angle-list" id="afterAngleListMain"></div>
+    <div class="btn-stack">
+      <button class="btn btn-primary" onclick="goToComment()">コメント入力へ進む →</button>
+      <button class="btn btn-secondary" onclick="showScreen(0)">← 一覧に戻る</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 4: After カメラ -->
 <div class="screen" id="screen4">
   <div class="screen-inner safe-bottom">
     <p class="screen-title cam-title">After撮影</p>
@@ -396,7 +413,7 @@
     </div>
     <div class="angle-list" id="afterAngleList"></div>
     <div class="btn-stack">
-      <button class="btn btn-secondary" onclick="goBack(2)">← 戻る</button>
+      <button class="btn btn-secondary" onclick="backToAfterList()">← アングル一覧に戻る</button>
     </div>
   </div>
 </div>
@@ -774,11 +791,9 @@ function goNext2() {
     }
     sess.currentAngleIdx = 0;
     document.getElementById('angleHint4').textContent = ANGLE_HINTS[site.workType] || '';
-    updateAfterView();
-    renderAfterAngleList();
+    renderAfterAngleListMain();
     updateStepBar(4, 2);
-    showScreen(4);
-    startCamera2();
+    showScreen('screen4a');
   }
 }
 
@@ -980,24 +995,15 @@ function confirmPhoto() {
     window._toastTimer = setTimeout(() => { toast.style.display = 'none'; }, 3000);
   } else {
     sess.angles[sess.currentAngleIdx].after = dataUrl;
-    renderAfterAngleList();
-    const nextIdx = sess.currentAngleIdx + 1;
-    if (nextIdx < sess.angles.length) {
-      sess.currentAngleIdx = nextIdx;
-      showScreen(4);
-      updateAfterView();
-      startCamera2();
-    } else {
-      stopCameras();
-      const site = getSite(sess.siteId);
-      site.angles = sess.angles;
-      site.updatedAt = new Date().toISOString();
-      upsertSite(site);
-      document.getElementById('siteComment').value = site.comment || '';
-      updateCharCount();
-      updateStepBar(4, 3);
-      showScreen(5);
-    }
+    // 中間保存
+    const site = getSite(sess.siteId);
+    site.angles = sess.angles;
+    site.updatedAt = new Date().toISOString();
+    upsertSite(site);
+    // アングルリストに戻る
+    pauseCameras();
+    renderAfterAngleListMain();
+    showScreen('screen4a');
   }
 }
 
@@ -1030,6 +1036,51 @@ function saveBefore() {
   };
   upsertSite(site);
   showScreen(0);
+}
+
+function renderAfterAngleListMain() {
+  const c = document.getElementById('afterAngleListMain');
+  c.innerHTML = '';
+  sess.angles.forEach((a, i) => {
+    const done = !!a.after;
+    const row = document.createElement('div');
+    row.className = 'angle-row after-selectable' + (done ? ' complete' : '');
+    row.innerHTML = `
+      <div class="angle-num">${i+1}</div>
+      <div class="angle-thumb before-thumb"><img src="${a.before}"><div class="angle-thumb-label">BEFORE</div></div>
+      <div class="angle-arrow">→</div>
+      <div class="angle-thumb ${done ? 'after-thumb' : 'empty-thumb'}">${done ? `<img src="${a.after}"><div class="angle-thumb-label">AFTER</div>` : '<span class="no-shot">撮影なし</span>'}</div>
+      <div class="angle-status ${done ? 'ok' : 'skip'}">${done ? '✓ 撮影済み' : '撮影なし'}</div>`;
+    row.addEventListener('click', () => startAfterShot(i));
+    c.appendChild(row);
+  });
+}
+
+function startAfterShot(idx) {
+  sess.currentAngleIdx = idx;
+  document.getElementById('afterDesc').textContent = `アングル ${idx+1} のAfterを撮影してください。`;
+  document.getElementById('afterAngleCounter').textContent = `アングル ${idx+1} / ${sess.angles.length}`;
+  document.getElementById('beforeGuideImg').src = sess.angles[idx].before;
+  showScreen(4);
+  startCamera2();
+}
+
+function backToAfterList() {
+  pauseCameras();
+  renderAfterAngleListMain();
+  showScreen('screen4a');
+}
+
+function goToComment() {
+  stopCameras();
+  const site = getSite(sess.siteId);
+  site.angles = sess.angles;
+  site.updatedAt = new Date().toISOString();
+  upsertSite(site);
+  document.getElementById('siteComment').value = site.comment || '';
+  updateCharCount();
+  updateStepBar(4, 3);
+  showScreen(5);
 }
 
 function updateAfterView() {
@@ -1076,17 +1127,11 @@ function goNext5() {
 }
 
 function goBackToAfter() {
-  stopCameras();
   const site = getSite(sess.siteId);
   sess.angles = site.angles || [];
-  sess.currentAngleIdx = sess.angles.findIndex(a => !a.after);
-  if (sess.currentAngleIdx < 0) sess.currentAngleIdx = sess.angles.length - 1;
-  document.getElementById('angleHint4').textContent = ANGLE_HINTS[site.workType] || '';
-  updateAfterView();
-  renderAfterAngleList();
+  renderAfterAngleListMain();
   updateStepBar(4, 2);
-  showScreen(4);
-  startCamera2();
+  showScreen('screen4a');
 }
 
 // ===== CONFIRM =====
@@ -1095,7 +1140,8 @@ function buildConfirmScreen(site) {
   document.getElementById('confSite').textContent = site.siteName;
   document.getElementById('confWork').textContent = site.workType;
   document.getElementById('confDate').textContent = fmtDate(site.createdAt);
-  document.getElementById('confAngles').textContent = `${(site.angles||[]).length} アングル`;
+  const pairedAngles = (site.angles||[]).filter(a => a.after);
+  document.getElementById('confAngles').textContent = `${pairedAngles.length} ペア保存`;
   document.getElementById('confComment').textContent = site.comment || '';
 
   const basePath = getBasePath();
@@ -1105,14 +1151,14 @@ function buildConfirmScreen(site) {
 
   const g = document.getElementById('confPairGrid');
   g.innerHTML = '';
-  (site.angles||[]).forEach((a, i) => {
+  pairedAngles.forEach((a, i) => {
     const row = document.createElement('div');
     row.className = 'pair-row';
     row.innerHTML = `
       <div class="pair-num">${i+1}</div>
       <div class="pair-img"><img src="${a.before}"></div>
       <div class="pair-arrow">→</div>
-      <div class="pair-img">${a.after?`<img src="${a.after}">`:'<div style="background:var(--surface2);width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--text-sub);font-size:12px;">未撮影</div>'}</div>`;
+      <div class="pair-img"><img src="${a.after}"></div>`;
     g.appendChild(row);
   });
 
@@ -1162,12 +1208,13 @@ async function saveToDropbox() {
   const folder = `${site.siteName}_${site.workType}_${getTodayStr()}`;
   const dropboxFolder = `${basePath}/${site.staffName}/${folder}`;
 
-  // ファイル一覧作成
+  // after有りのアングルのみ保存対象
+  const pairedAngles = (site.angles||[]).filter(a => a.after);
   const files = [];
-  (site.angles||[]).forEach((a, i) => {
+  pairedAngles.forEach((a, i) => {
     const num = String(i+1).padStart(2,'0');
     files.push({ dataUrl: a.before, name: `angle${num}_before.jpg` });
-    if (a.after) files.push({ dataUrl: a.after, name: `angle${num}_after.jpg` });
+    files.push({ dataUrl: a.after, name: `angle${num}_after.jpg` });
   });
 
   // コメントtxt
