@@ -1218,9 +1218,16 @@ function goBackToComment() {
 }
 
 // ===== DROPBOX UPLOAD =====
-async function dataUrlToBlob(dataUrl) {
-  const res = await fetch(dataUrl);
-  return await res.blob();
+function dataUrlToBlob(dataUrl) {
+  // iOS SafariはfetchでのdataURL読み込みが非対応のため、手動デコード
+  const [header, base64] = dataUrl.split(',');
+  const mime = header.match(/:(.*?);/)[1];
+  const binary = atob(base64);
+  const array = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    array[i] = binary.charCodeAt(i);
+  }
+  return new Blob([array], { type: mime });
 }
 
 async function uploadToDropbox(blob, dropboxPath, token) {
