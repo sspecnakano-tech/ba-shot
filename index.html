@@ -629,7 +629,7 @@ async function handleOAuthCallback() {
   const codeVerifier = localStorage.getItem('ba_shot_pkce_verifier');
   if (!codeVerifier) {
     // verifierがない＝古いcodeパラメータが残っているだけなのでURLだけ消して終了
-    window.history.replaceState({}, document.title, REDIRECT_URI);
+    try { window.history.replaceState({}, document.title, REDIRECT_URI); } catch(e) {}
     return;
   }
 
@@ -1487,7 +1487,7 @@ function confirmDeleteSite() {
 }
 
 // ===== INIT =====
-handleOAuthCallback();
+handleOAuthCallback().catch(function(e) { console.warn('OAuth callback error:', e); });
 renderSiteList();
 </script>
 </body>
