@@ -1354,24 +1354,27 @@ function dataUrlToBlob(dataUrl) {
 }
 
 async function uploadToDropbox(blob, dropboxPath, token) {
-  // iOS SafariはHTTPヘッダーに日本語が含まれるとTypeErrorになるため
-  // JSON文字列の日本語をUnicodeエスケープ(\uXXXX)に変換してASCII安全にする
-  var rawArg = JSON.stringify({ path: dropboxPath, mode: 'overwrite', autorename: false });
-  var apiArg = '';
-  for (var i = 0; i < rawArg.length; i++) {
-    var code = rawArg.charCodeAt(i);
-    if (code > 127) {
-      apiArg += String.fromCharCode(92) + 'u' + ('0000' + code.toString(16)).slice(-4);
+  // api.dropboxapi.com エンドポイントを使用（content.dropboxapi.comではない）
+  // iOS Safariのヘッダー日本語問題を回避するため、パスをJSON内で安全に扱う
+  var pathObj = { path: dropboxPath, mode: 'overwrite', autorename: false };
+  var pathJson = JSON.stringify(pathObj);
+  var safeJson = '';
+  for (var i = 0; i < pathJson.length; i++) {
+    var c = pathJson.charCodeAt(i);
+    if (c < 128) {
+      safeJson += pathJson[i];
     } else {
-      apiArg += rawArg[i];
+      var h = c.toString(16);
+      while (h.length < 4) h = '0' + h;
+      safeJson += '\\u' + h;
     }
   }
   const res = await fetch('https://content.dropboxapi.com/2/files/upload', {
     method: 'POST',
     headers: {
       'Authorization': 'Bearer ' + token,
-      'Dropbox-API-Arg': apiArg,
       'Content-Type': 'application/octet-stream',
+      'Dropbox-API-Arg': safeJson,
     },
     body: blob,
   });
