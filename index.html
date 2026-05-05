@@ -627,7 +627,11 @@ async function handleOAuthCallback() {
   window.history.replaceState({}, document.title, REDIRECT_URI);
 
   const codeVerifier = localStorage.getItem('ba_shot_pkce_verifier');
-  if (!codeVerifier) { alert('認証エラー：verifierが見つかりません。再度お試しください。'); return; }
+  if (!codeVerifier) {
+    // verifierがない＝古いcodeパラメータが残っているだけなのでURLだけ消して終了
+    window.history.replaceState({}, document.title, REDIRECT_URI);
+    return;
+  }
 
   try {
     const res = await fetch('https://api.dropboxapi.com/oauth2/token', {
@@ -1350,15 +1354,11 @@ function dataUrlToBlob(dataUrl) {
 }
 
 async function uploadToDropbox(blob, dropboxPath, token) {
-  // iOS SafariはHTTPヘッダーに日本語が含まれるとTypeErrorになるため
-  // JSON文字列の日本語部分をUnicodeエスケープ（\uXXXX）に変換してASCII安全にする
-  const apiArg = JSON.stringify({ path: dropboxPath, mode: 'overwrite', autorename: false })
-    .replace(/[-￿]/g, c => '\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
   const res = await fetch('https://content.dropboxapi.com/2/files/upload', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
-      'Dropbox-API-Arg': apiArg,
+      'Dropbox-API-Arg': JSON.stringify({ path: dropboxPath, mode: 'overwrite', autorename: false }),
       'Content-Type': 'application/octet-stream',
     },
     body: blob,
