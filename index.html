@@ -1233,11 +1233,15 @@ function dataUrlToBlob(dataUrl) {
 async function uploadToDropbox(blob, dropboxPath, token) {
   if (!token || token.trim() === '') throw new TypeError('トークンが空です');
   if (!dropboxPath || dropboxPath.includes('undefined')) throw new TypeError('パスにundefinedが含まれます: ' + dropboxPath);
+  // iOS SafariはHTTPヘッダーに日本語が含まれるとTypeErrorになるため
+  // JSON文字列をUnicodeエスケープ形式に変換してASCII安全にする
+  const apiArg = JSON.stringify({ path: dropboxPath, mode: 'overwrite', autorename: false })
+    .replace(/[\u0080-\uFFFF]/g, c => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
   const res = await fetch('https://content.dropboxapi.com/2/files/upload', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
-      'Dropbox-API-Arg': JSON.stringify({ path: dropboxPath, mode: 'overwrite', autorename: false }),
+      'Dropbox-API-Arg': apiArg,
       'Content-Type': 'application/octet-stream',
     },
     body: blob,
@@ -1320,7 +1324,7 @@ async function saveToDropbox() {
   } catch(e) {
     document.getElementById('uploadProgressArea').style.display = 'none';
     document.getElementById('saveBtnArea').style.display = 'flex';
-    alert('Dropboxへの保存に失敗しました。\n\n種別: ' + e.name + '\nメッセージ: ' + e.message + '\n\n場所: ' + (e.stack ? e.stack.split('\n').slice(0,3).join(' | ') : '不明'));
+    alert('Dropboxへの保存に失敗しました。\nトークンや設定を確認してください。\n\n' + e.message);
   }
 }
 
