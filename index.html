@@ -509,13 +509,8 @@
         <div class="status-dot" id="tokenStatusDot"></div>
         <div id="tokenStatusText"></div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Dropbox アクセストークン</label>
-        <div class="token-input-wrap">
-          <input type="password" id="dropboxToken" placeholder="sl.u.xxxxx...">
-          <button class="token-toggle" onclick="toggleTokenVisibility()">表示</button>
-        </div>
-      </div>
+      <button class="btn btn-primary" id="dropboxAuthBtn" onclick="startDropboxOAuth()" style="margin-top:12px;width:100%;">Dropboxと連携する</button>
+      <button class="btn btn-secondary" id="dropboxUnlinkBtn" onclick="unlinkDropbox()" style="margin-top:8px;width:100%;display:none;">連携を解除する</button>
     </div>
 
     <div class="form-group">
@@ -582,36 +577,160 @@ function saveSettingsData(s) { localStorage.setItem(SETTINGS_KEY, JSON.stringify
 function getToken() { return loadSettings().token || ''; }
 function getBasePath() { return (loadSettings().basePath || '').replace(/\/$/, ''); }
 
-function openSettings() {
+// ===== OAUTH PKCE =====
+const DROPBOX_APP_KEY = 'xmgtc48p7qtl753';
+const REDIRECT_URI = 'https://sspecnakano-tech.github.io/ba-shot/';
+
+function generateRandomString(length) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+  const arr = new Uint8Array(length);
+  crypto.getRandomValues(arr);
+  return Array.from(arr).map(b => chars[b % chars.length]).join('');
+}
+
+async function sha256(plain) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(plain);
+  return crypto.subtle.digest('SHA-256', data);
+}
+
+function base64urlEncode(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let str = '';
+  bytes.forEach(b => str += String.fromCharCode(b));
+  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function startDropboxOAuth() {
+  const codeVerifier = generateRandomString(64);
+  const hashed = await sha256(codeVerifier);
+  const codeChallenge = base64urlEncode(hashed);
+  localStorage.setItem('ba_shot_pkce_verifier', codeVerifier);
+
+  const params = new URLSearchParams({
+    client_id: DROPBOX_APP_KEY,
+    redirect_uri: REDIRECT_URI,
+    response_type: 'code',
+    code_challenge: codeChallenge,
+    code_challenge_method: 'S256',
+    token_access_type: 'offline',
+  });
+  window.location.href = 'https://www.dropbox.com/oauth2/authorize?' + params.toString();
+}
+
+async function handleOAuthCallback() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  if (!code) return;
+
+  // URLのcodeパラメータを消す
+  window.history.replaceState({}, document.title, REDIRECT_URI);
+
+  const codeVerifier = localStorage.getItem('ba_shot_pkce_verifier');
+  if (!codeVerifier) { alert('認証エラー：verifierが見つかりません。再度お試しください。'); return; }
+
+  try {
+    const res = await fetch('https://api.dropboxapi.com/oauth2/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        grant_type: 'authorization_code',
+        client_id: DROPBOX_APP_KEY,
+        redirect_uri: REDIRECT_URI,
+        code_verifier: codeVerifier,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error_description || data.error);
+
+    const s = loadSettings();
+    saveSettingsData({
+      ...s,
+      token: data.access_token,
+      refreshToken: data.refresh_token,
+      tokenExpiry: Date.now() + (data.expires_in - 60) * 1000,
+    });
+    localStorage.removeItem('ba_shot_pkce_verifier');
+    alert('Dropboxとの連携が完了しました。');
+  } catch(e) {
+    alert('認証に失敗しました：' + e.message);
+  }
+}
+
+async function refreshAccessToken() {
   const s = loadSettings();
-  document.getElementById('dropboxToken').value = s.token || '';
-  document.getElementById('dropboxBasePath').value = s.basePath || '';
+  if (!s.refreshToken) throw new Error('リフレッシュトークンがありません。設定画面から再連携してください。');
+  const res = await fetch('https://api.dropboxapi.com/oauth2/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: s.refreshToken,
+      client_id: DROPBOX_APP_KEY,
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error_description || data.error);
+  saveSettingsData({
+    ...s,
+    token: data.access_token,
+    tokenExpiry: Date.now() + (data.expires_in - 60) * 1000,
+  });
+  return data.access_token;
+}
+
+async function getValidToken() {
+  const s = loadSettings();
+  if (!s.token) throw new Error('Dropboxと連携されていません。設定画面から連携してください。');
+  if (s.tokenExpiry && Date.now() > s.tokenExpiry) {
+    return await refreshAccessToken();
+  }
+  return s.token;
+}
+
+function unlinkDropbox() {
+  if (!confirm('Dropboxとの連携を解除しますか？')) return;
+  const s = loadSettings();
+  delete s.token;
+  delete s.refreshToken;
+  delete s.tokenExpiry;
+  saveSettingsData(s);
+  updateTokenStatus();
+}
+
+function openSettings() {
+  document.getElementById('dropboxBasePath').value = loadSettings().basePath || '';
   updateTokenStatus();
   updateStepBar(null, 0);
   showScreen(8);
 }
 
 function saveSettings() {
-  const token = document.getElementById('dropboxToken').value.trim();
   const basePath = document.getElementById('dropboxBasePath').value.trim();
-  saveSettingsData({ token, basePath });
+  const s = loadSettings();
+  saveSettingsData({ ...s, basePath });
   alert('設定を保存しました。');
   showScreen(0);
 }
 
-function toggleTokenVisibility() {
-  const inp = document.getElementById('dropboxToken');
-  const btn = inp.nextElementSibling;
-  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '隠す'; }
-  else { inp.type = 'password'; btn.textContent = '表示'; }
-}
-
 function updateTokenStatus() {
-  const token = getToken();
+  const s = loadSettings();
   const dot = document.getElementById('tokenStatusDot');
   const text = document.getElementById('tokenStatusText');
-  if (token) { dot.className = 'status-dot ok'; text.textContent = 'トークン設定済み'; }
-  else { dot.className = 'status-dot ng'; text.textContent = 'トークン未設定'; }
+  const authBtn = document.getElementById('dropboxAuthBtn');
+  const unlinkBtn = document.getElementById('dropboxUnlinkBtn');
+  if (s.token && s.refreshToken) {
+    dot.className = 'status-dot ok';
+    text.textContent = 'Dropbox連携済み';
+    authBtn.style.display = 'none';
+    unlinkBtn.style.display = 'block';
+  } else {
+    dot.className = 'status-dot ng';
+    text.textContent = '未連携';
+    authBtn.style.display = 'block';
+    unlinkBtn.style.display = 'none';
+  }
 }
 
 // ===== STORAGE =====
@@ -661,9 +780,9 @@ function showScreen(n) {
 
 // ===== SCREEN 0: 一覧 =====
 function renderSiteList() {
-  const token = getToken();
+  const s = loadSettings();
   const warn = document.getElementById('dropboxWarning');
-  warn.innerHTML = token ? '' : `<div class="notice">⚠ Dropboxトークンが未設定です。右上の⚙から設定してください。</div>`;
+  warn.innerHTML = (s.token && s.refreshToken) ? '' : `<div class="notice">⚠ Dropboxと未連携です。右上の⚙から連携設定してください。</div>`;
 
   const sites = loadSites();
   const el = document.getElementById('siteList');
@@ -1231,17 +1350,11 @@ function dataUrlToBlob(dataUrl) {
 }
 
 async function uploadToDropbox(blob, dropboxPath, token) {
-  if (!token || token.trim() === '') throw new TypeError('トークンが空です');
-  if (!dropboxPath || dropboxPath.includes('undefined')) throw new TypeError('パスにundefinedが含まれます: ' + dropboxPath);
-  // iOS SafariはHTTPヘッダーに日本語が含まれるとTypeErrorになるため
-  // JSON文字列をUnicodeエスケープ形式に変換してASCII安全にする
-  const apiArg = JSON.stringify({ path: dropboxPath, mode: 'overwrite', autorename: false })
-    .replace(/[\u0080-\uFFFF]/g, c => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
   const res = await fetch('https://content.dropboxapi.com/2/files/upload', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
-      'Dropbox-API-Arg': apiArg,
+      'Dropbox-API-Arg': JSON.stringify({ path: dropboxPath, mode: 'overwrite', autorename: false }),
       'Content-Type': 'application/octet-stream',
     },
     body: blob,
@@ -1254,8 +1367,13 @@ async function uploadToDropbox(blob, dropboxPath, token) {
 }
 
 async function saveToDropbox() {
-  const token = getToken();
-  if (!token) { alert('Dropboxトークンが設定されていません。\n右上の⚙から設定してください。'); return; }
+  let token;
+  try {
+    token = await getValidToken();
+  } catch(e) {
+    alert(e.message);
+    return;
+  }
 
   const site = getSite(sess.siteId);
   const basePath = getBasePath();
@@ -1341,6 +1459,7 @@ function confirmDeleteSite() {
 }
 
 // ===== INIT =====
+handleOAuthCallback();
 renderSiteList();
 </script>
 </body>
