@@ -1431,7 +1431,25 @@ async function saveToDropbox() {
   };
 
   try {
-    for (const file of files) {
+    // デバッグ：最初のファイルだけ試す
+    if (files.length === 0) throw new Error('保存対象のアングルペアがありません');
+    const firstFile = files[0];
+    updateProgress('Step1: Blob変換中...');
+    let firstBlob;
+    try {
+      firstBlob = await dataUrlToBlob(firstFile.dataUrl);
+    } catch(e2) {
+      throw new Error('Blob変換エラー: ' + e2.message);
+    }
+    updateProgress('Step2: アップロード中... パス=' + dropboxFolder.slice(0,30));
+    try {
+      await uploadToDropbox(firstBlob, `${dropboxFolder}/${firstFile.name}`, token);
+    } catch(e3) {
+      throw new Error('fetch失敗: ' + e3.name + ' / ' + e3.message);
+    }
+    updateProgress('Step2成功！残りをアップロード中...');
+    done++;
+    for (const file of files.slice(1)) {
       updateProgress(`${file.name} をアップロード中... (${done+1}/${total})`);
       const blob = await dataUrlToBlob(file.dataUrl);
       await uploadToDropbox(blob, `${dropboxFolder}/${file.name}`, token);
