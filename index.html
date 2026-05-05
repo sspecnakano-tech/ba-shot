@@ -1355,9 +1355,17 @@ function dataUrlToBlob(dataUrl) {
 
 async function uploadToDropbox(blob, dropboxPath, token) {
   // iOS SafariはHTTPヘッダーに日本語が含まれるとTypeErrorになるため
-  // JSON文字列をASCII安全な形に変換する
-  // encodeURIComponentでASCII安全なJSON文字列に変換
-  var apiArg = encodeURIComponent(JSON.stringify({ path: dropboxPath, mode: 'overwrite', autorename: false }));
+  // JSON文字列の日本語をUnicodeエスケープ(\uXXXX)に変換してASCII安全にする
+  var rawArg = JSON.stringify({ path: dropboxPath, mode: 'overwrite', autorename: false });
+  var apiArg = '';
+  for (var i = 0; i < rawArg.length; i++) {
+    var code = rawArg.charCodeAt(i);
+    if (code > 127) {
+      apiArg += String.fromCharCode(92) + 'u' + ('0000' + code.toString(16)).slice(-4);
+    } else {
+      apiArg += rawArg[i];
+    }
+  }
   const res = await fetch('https://content.dropboxapi.com/2/files/upload', {
     method: 'POST',
     headers: {
