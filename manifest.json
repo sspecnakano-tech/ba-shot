@@ -1,0 +1,22 @@
+{
+  "name": "BA Shot｜ビフォーアフター撮影",
+  "short_name": "BA Shot",
+  "description": "リフォーム現場のビフォーアフター撮影アプリ",
+  "icons": [
+    {
+      "src": "/ba-shot/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/ba-shot/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "/ba-shot/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f0f11",
+  "theme_color": "#4ade80"
+}
