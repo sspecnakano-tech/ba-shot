@@ -260,10 +260,6 @@
     <p class="screen-title">基本情報の入力</p>
     <p class="screen-desc">担当者・現場・工事種別を入力してください。</p>
     <div class="form-group">
-      <label class="form-label">担当者名 <span class="req">*</span></label>
-      <input type="text" id="staffName" placeholder="例：山田 太郎" autocomplete="name">
-    </div>
-    <div class="form-group">
       <label class="form-label">現場名 <span class="req">*</span></label>
       <input type="text" id="siteName" placeholder="例：北九州市小倉北区 様邸">
     </div>
@@ -502,7 +498,7 @@
 <div class="screen" id="screen8">
   <div class="screen-inner safe-bottom">
     <p class="screen-title">設定</p>
-    <p class="screen-desc">Dropbox連携の設定を行います。</p>
+    <p class="screen-desc">半期ごとに確認・更新してください。</p>
 
     <div class="settings-card">
       <div class="settings-status">
@@ -514,13 +510,40 @@
     </div>
 
     <div class="form-group">
-      <label class="form-label">保存先ベースパス</label>
-      <input type="text" id="dropboxBasePath" placeholder="/営業（LV1）/企画/画像・動画/2026年度ビフォー・アフター写真/北九州営業所 上期">
-      <p style="font-size:12px;color:var(--text-sub);margin-top:8px;line-height:1.6;">
-        ここで設定したパスの末尾に<br>
-        <span style="font-family:'DM Mono',monospace;color:var(--accent);">/担当者名/現場名_工事種別_日付/</span><br>
-        が自動で付きます。
-      </p>
+      <label class="form-label">撮影者名 <span class="req">*</span></label>
+      <input type="text" id="settingsStaffName" placeholder="例：中野" oninput="updatePathPreview()">
+      <p style="font-size:12px;color:var(--text-sub);margin-top:6px;line-height:1.6;">Dropbox内の個人フォルダ名と同じ名前にしてください。</p>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">年度 <span class="req">*</span></label>
+      <div class="select-wrap">
+        <select id="settingsYear" onchange="updatePathPreview()">
+          <option value="">選択してください</option>
+          <option value="2026年度ビフォー・アフター写真">2026年度</option>
+          <option value="2027年度ビフォー・アフター写真">2027年度</option>
+          <option value="2028年度ビフォー・アフター写真">2028年度</option>
+          <option value="2029年度ビフォー・アフター写真">2029年度</option>
+          <option value="2030年度ビフォー・アフター写真">2030年度</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">営業所・期 <span class="req">*</span></label>
+      <div class="select-wrap">
+        <select id="settingsBranch" onchange="updatePathPreview()">
+          <option value="">選択してください</option>
+          <option value="北九州営業所　上期">北九州営業所　上期</option>
+          <option value="北九州営業所　下期">北九州営業所　下期</option>
+          <option value="福岡営業所　上期">福岡営業所　上期</option>
+          <option value="福岡営業所　下期">福岡営業所　下期</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="notice" style="font-size:12px;">
+      保存先：<span style="font-family:'DM Mono',monospace;color:var(--accent);" id="pathPreview">/営業（LV1）/企画/画像・動画/［年度］/［営業所・期］/［撮影者名］/</span>
     </div>
 
     <div class="btn-stack">
@@ -704,16 +727,36 @@ function unlinkDropbox() {
 }
 
 function openSettings() {
-  document.getElementById('dropboxBasePath').value = loadSettings().basePath || '';
+  const s = loadSettings();
+  document.getElementById('settingsStaffName').value = s.staffName || '';
+  document.getElementById('settingsYear').value = s.year || '';
+  document.getElementById('settingsBranch').value = s.branch || '';
+  updatePathPreview();
   updateTokenStatus();
   updateStepBar(null, 0);
   showScreen(8);
 }
 
+function updatePathPreview() {
+  const staff = document.getElementById('settingsStaffName').value.trim();
+  const year = document.getElementById('settingsYear').value;
+  const branch = document.getElementById('settingsBranch').value;
+  const base = '/営業（LV1）/企画/画像・動画';
+  const preview = base
+    + (year ? '/' + year : '/［年度］')
+    + (branch ? '/' + branch : '/［営業所・期］')
+    + (staff ? '/' + staff : '/［撮影者名］') + '/';
+  document.getElementById('pathPreview').textContent = preview;
+}
+
 function saveSettings() {
-  const basePath = document.getElementById('dropboxBasePath').value.trim();
+  const staffName = document.getElementById('settingsStaffName').value.trim();
+  const year = document.getElementById('settingsYear').value;
+  const branch = document.getElementById('settingsBranch').value;
+  if (!staffName || !year || !branch) { alert('すべての項目を入力してください'); return; }
+  const basePath = '/営業（LV1）/企画/画像・動画/' + year + '/' + branch;
   const s = loadSettings();
-  saveSettingsData({ ...s, basePath });
+  saveSettingsData({ ...s, staffName, year, branch, basePath });
   alert('設定を保存しました。');
   showScreen(0);
 }
@@ -854,17 +897,18 @@ function openSite(id) {
 // ===== SCREEN 1 =====
 function startNewSite() {
   sess = { siteId: 'site_' + Date.now(), checklistMode: 'before', angles: [], currentAngleIdx: 0, stream: null, facingMode: 'environment' };
-  ['staffName','siteName'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('siteName').value = '';
   document.getElementById('workType').value = '';
   updateStepBar(3, 1);
   showScreen(1);
 }
 
 function goNext1() {
-  const staff = document.getElementById('staffName').value.trim();
   const site  = document.getElementById('siteName').value.trim();
   const work  = document.getElementById('workType').value;
-  if (!staff || !site || !work) { alert('すべての項目を入力してください'); return; }
+  if (!site || !work) { alert('すべての項目を入力してください'); return; }
+  const staff = loadSettings().staffName || '';
+  if (!staff) { alert('設定画面で撮影者名を登録してください'); return; }
   document.getElementById('checklistDesc').textContent = 'すべての項目を確認してチェックを入れてください。';
   document.getElementById('btnToCamera').textContent = '✓ チェック完了 — Before撮影へ';
   buildChecklist(work);
@@ -1164,7 +1208,7 @@ function saveBefore() {
   stopCameras();
   const site = {
     id: sess.siteId,
-    staffName: document.getElementById('staffName').value.trim(),
+    staffName: loadSettings().staffName || '',
     siteName: document.getElementById('siteName').value.trim(),
     workType: document.getElementById('workType').value,
     angles: sess.angles,
@@ -1354,19 +1398,14 @@ function dataUrlToBlob(dataUrl) {
 }
 
 async function uploadToDropbox(blob, dropboxPath, token) {
-  // api.dropboxapi.com エンドポイントを使用（content.dropboxapi.comではない）
-  // iOS Safariのヘッダー日本語問題を回避するため、パスをJSON内で安全に扱う
-  var pathObj = { path: dropboxPath, mode: 'overwrite', autorename: false };
-  var pathJson = JSON.stringify(pathObj);
-  var safeJson = '';
-  for (var i = 0; i < pathJson.length; i++) {
-    var c = pathJson.charCodeAt(i);
-    if (c < 128) {
-      safeJson += pathJson[i];
+  var rawArg = JSON.stringify({ path: dropboxPath, mode: 'overwrite', autorename: false });
+  var apiArg = '';
+  for (var i = 0; i < rawArg.length; i++) {
+    var code = rawArg.charCodeAt(i);
+    if (code > 127) {
+      apiArg += String.fromCharCode(92) + 'u' + ('0000' + code.toString(16)).slice(-4);
     } else {
-      var h = c.toString(16);
-      while (h.length < 4) h = '0' + h;
-      safeJson += '\\u' + h;
+      apiArg += rawArg[i];
     }
   }
   const res = await fetch('https://content.dropboxapi.com/2/files/upload', {
@@ -1374,7 +1413,7 @@ async function uploadToDropbox(blob, dropboxPath, token) {
     headers: {
       'Authorization': 'Bearer ' + token,
       'Content-Type': 'application/octet-stream',
-      'Dropbox-API-Arg': safeJson,
+      'Dropbox-API-Arg': apiArg,
     },
     body: blob,
   });
