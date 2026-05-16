@@ -1309,7 +1309,7 @@ async function ensureStream() {
   if (sess.stream && sess.stream.active) return sess.stream;
   if (sess.stream) { sess.stream.getTracks().forEach(t=>t.stop()); sess.stream=null; }
   sess.stream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: sess.facingMode, width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false
+    video: { facingMode: sess.facingMode }, audio: false
   });
   return sess.stream;
 }
