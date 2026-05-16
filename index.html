@@ -735,7 +735,7 @@ if ('serviceWorker' in navigator) {
     <p class="screen-desc" style="color:var(--warn);">📋 施主様に枠内へご署名いただいてください。</p>
     <p class="signature-hint">指またはスタイラスでご署名ください</p>
     <div class="signature-area">
-      <canvas class="signature-canvas" id="signatureCanvas" height="200"></canvas>
+      <canvas class="signature-canvas" id="signatureCanvas" height="100"></canvas>
     </div>
     <button class="signature-clear" onclick="clearSignature()">✕ 署名をクリア</button>
     <div class="btn-stack">
@@ -1963,7 +1963,7 @@ function initSignaturePad() {
 
   const rect = c.parentElement.getBoundingClientRect();
   c.width = rect.width > 10 ? rect.width : window.innerWidth - 40;
-  c.height = 200;
+  c.height = 100;
   const ctx = c.getContext('2d');
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, c.width, c.height);
@@ -2111,17 +2111,18 @@ async function generateConsentPng(site, consentData) {
     line(MARGIN + 180, W-MARGIN, y+4, '#aaaaaa'); y += 34;
   });
 
-  // 署名ラベル → 下行に署名画像
+  // 署名ラベル → 下行に署名画像（幅を抑えてコンパクトに）
   y += 4;
   ctx.fillStyle = '#555555'; ctx.font = '400 13px sans-serif';
   ctx.fillText('ご署名：', MARGIN + 80, y);
-  y += 16; // ラベルの下に余白を取ってから署名画像を配置
+  y += 12;
   const sigCanvas = document.getElementById('signatureCanvas');
   const sigAspect = sigCanvas.width / sigCanvas.height;
-  const sigW = W - MARGIN*2 - 80;
-  const sigH = sigW / sigAspect;
-  ctx.drawImage(sigCanvas, MARGIN + 80, y, sigW, sigH);
-  line(MARGIN + 80, W-MARGIN, y + sigH + 4, '#aaaaaa');
+  const sigW = W - MARGIN*2 - 80; // 全幅で横長サインを自然に表示
+  const sigH = Math.round(sigW / sigAspect);
+  const sigX = MARGIN + 80;
+  ctx.drawImage(sigCanvas, sigX, y, sigW, sigH);
+  line(sigX, sigX + sigW, y + sigH + 4, '#aaaaaa');
   y += sigH + 24;
 
   // フッター
