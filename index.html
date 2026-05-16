@@ -5,10 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="apple-mobile-web-app-title" content="BA Shot">
 <title>BA Shot｜ビフォーアフター撮影</title>
-<link rel="apple-touch-icon" href="/ba-shot/apple-touch-icon.png">
-<link rel="manifest" href="/ba-shot/manifest.json">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
 
@@ -63,20 +60,16 @@
 
   /* SITE LIST */
   .site-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
-  .site-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 16px 16px 16px 20px; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; }
-  .site-card:active { transform: scale(0.98); }
+  .site-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 16px 16px 12px 20px; transition: all 0.2s; position: relative; overflow: hidden; }
   .site-card-status-bar { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; }
   .bar-after { background: #60a5fa; } .bar-comment { background: #f97316; } .bar-done { background: #4ade80; }
-  .site-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+  .bar-consented { background: #a78bfa; } .bar-declined { background: #94a3b8; }
+  .site-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
   .site-card-name { font-size: 15px; font-weight: 700; line-height: 1.4; flex: 1; }
-  .status-badge { font-size: 10px; font-family: 'DM Mono', monospace; font-weight: 500; padding: 3px 9px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; letter-spacing: 0.04em; }
-  .badge-after { background: rgba(96,165,250,0.15); color: #60a5fa; border: 1px solid rgba(96,165,250,0.3); }
-  .badge-comment { background: rgba(249,115,22,0.15); color: #f97316; border: 1px solid rgba(249,115,22,0.3); }
-  .badge-done { background: rgba(74,222,128,0.12); color: #4ade80; border: 1px solid rgba(74,222,128,0.25); }
-  .site-card-meta { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+  .site-card-meta { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
   .site-card-tag { font-size: 11px; color: var(--text-sub); font-family: 'DM Mono', monospace; background: var(--surface2); padding: 2px 8px; border-radius: 4px; }
   .site-card-date { font-size: 11px; color: var(--text-sub); }
-  .site-card-photos { display: flex; gap: 4px; }
+  .site-card-photos { display: flex; gap: 4px; margin-bottom: 10px; }
   .after-selectable { cursor: pointer; transition: background 0.15s; }
   .after-selectable:active { background: var(--surface2); }
   .no-shot { font-size: 11px; color: var(--text-sub); display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
@@ -88,6 +81,24 @@
   .site-card-thumb-more { width: 48px; height: 36px; border-radius: 4px; background: var(--surface2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--text-sub); font-family: 'DM Mono', monospace; }
   .empty-state { text-align: center; padding: 48px 20px; color: var(--text-sub); font-size: 14px; line-height: 1.8; }
   .empty-icon { font-size: 40px; margin-bottom: 16px; opacity: 0.4; }
+
+  /* PROGRESS STEPS */
+  .progress-steps { display: flex; align-items: center; gap: 0; margin-bottom: 10px; }
+  .prog-step { display: flex; flex-direction: column; align-items: center; gap: 3px; flex: 1; position: relative; cursor: default; }
+  .prog-step.clickable { cursor: pointer; }
+  .prog-step.clickable:active .prog-icon { transform: scale(0.92); }
+  .prog-icon { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--border); background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 13px; transition: all 0.2s; position: relative; z-index: 1; }
+  .prog-step.done .prog-icon { background: rgba(74,222,128,0.15); border-color: var(--accent); }
+  .prog-step.active .prog-icon { background: rgba(96,165,250,0.15); border-color: #60a5fa; }
+  .prog-step.consent-ok .prog-icon { background: rgba(167,139,250,0.15); border-color: #a78bfa; }
+  .prog-step.consent-ng .prog-icon { background: rgba(148,163,184,0.12); border-color: #94a3b8; }
+  .prog-label { font-size: 9px; font-family: 'DM Mono', monospace; color: var(--text-sub); letter-spacing: 0.04em; text-align: center; line-height: 1.2; }
+  .prog-step.done .prog-label { color: var(--accent); }
+  .prog-step.active .prog-label { color: #60a5fa; }
+  .prog-step.consent-ok .prog-label { color: #a78bfa; }
+  .prog-step.consent-ng .prog-label { color: #94a3b8; }
+  .prog-connector { flex: 1; height: 2px; background: var(--border); margin-bottom: 14px; max-width: 20px; }
+  .prog-connector.done { background: var(--accent); }
 
   /* CHECKLIST */
   .checklist-section { margin-bottom: 24px; }
@@ -234,6 +245,34 @@
   .complete-desc { font-size: 14px; color: var(--text-sub); text-align: center; line-height: 1.7; margin-bottom: 32px; white-space: pre-line; }
 
   .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 16px); }
+
+  /* CONSENT */
+  .consent-doc { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 20px 18px; margin-bottom: 20px; font-size: 13px; line-height: 1.9; color: var(--text); }
+  .consent-doc h2 { font-size: 14px; font-weight: 700; text-align: center; margin-bottom: 16px; }
+  .consent-doc h3 { font-size: 12px; font-family: 'DM Mono', monospace; color: var(--accent); letter-spacing: 0.08em; margin: 14px 0 6px; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+  .consent-doc ul { padding-left: 18px; margin: 0; }
+  .consent-doc li { margin-bottom: 4px; }
+  .consent-photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 20px; }
+  .consent-photo-pair { display: flex; flex-direction: column; gap: 3px; }
+  .consent-photo-pair .pair-label { font-size: 10px; font-family: 'DM Mono', monospace; text-align: center; }
+  .consent-photo-pair .pair-label.bl { color: var(--before-color); }
+  .consent-photo-pair .pair-label.al { color: var(--after-color); }
+  .consent-photo-img { width: 100%; aspect-ratio: 4/3; border-radius: 6px; overflow: hidden; border: 1px solid var(--border); }
+  .consent-photo-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .consent-choice { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+  .consent-choice-btn { padding: 16px 8px; border-radius: var(--radius-sm); border: 2px solid var(--border); background: var(--surface); color: var(--text-sub); font-size: 14px; font-weight: 700; text-align: center; cursor: pointer; transition: all 0.2s; }
+  .consent-choice-btn.selected-ok { border-color: var(--accent); background: rgba(74,222,128,0.1); color: var(--accent); }
+  .consent-choice-btn.selected-ng { border-color: var(--danger); background: rgba(248,113,113,0.1); color: var(--danger); }
+  .signature-area { background: #ffffff; border: 2px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 8px; position: relative; touch-action: none; }
+  .signature-canvas { display: block; width: 100%; border-radius: var(--radius-sm); cursor: crosshair; }
+  .signature-hint { font-size: 11px; color: var(--text-sub); text-align: center; margin-bottom: 8px; }
+  .signature-clear { background: none; border: 1px solid var(--border); color: var(--text-sub); font-size: 12px; padding: 6px 14px; border-radius: 6px; cursor: pointer; display: block; margin: 0 auto 20px; }
+  .bar-consented { background: #a78bfa; }
+  .bar-declined { background: #94a3b8; }
+  .badge-consented { background: rgba(167,139,250,0.15); color: #a78bfa; border: 1px solid rgba(167,139,250,0.3); }
+  .badge-declined { background: rgba(148,163,184,0.12); color: #94a3b8; border: 1px solid rgba(148,163,184,0.25); }
+  .consent-btn { background: rgba(74,222,128,0.12); color: var(--accent); border: 1.5px solid var(--accent); font-size: 13px; padding: 10px 16px; border-radius: var(--radius-sm); cursor: pointer; font-family: 'Noto Sans JP', sans-serif; font-weight: 700; width: 100%; margin-bottom: 8px; }
+  .consent-section-title { font-size: 12px; font-family: 'DM Mono', monospace; color: var(--text-sub); letter-spacing: 0.08em; margin: 16px 0 8px; }
 </style>
 <script>
 if ('serviceWorker' in navigator) {
@@ -465,11 +504,11 @@ if ('serviceWorker' in navigator) {
   </div>
 </div>
 
-<!-- SCREEN 6: 確認・保存 -->
+<!-- SCREEN 6: 確認 -->
 <div class="screen" id="screen6">
   <div class="screen-inner safe-bottom">
-    <p class="screen-title">確認・保存</p>
-    <p class="screen-desc">内容を確認してDropboxへ保存してください。</p>
+    <p class="screen-title">現場内容の確認</p>
+    <p class="screen-desc">内容を確認してください。Dropboxへの保存は現場一覧から行えます。</p>
     <div class="info-card">
       <div class="info-card-row"><div class="info-card-label">担当者</div><div class="info-card-val" id="confStaff"></div></div>
       <div class="info-card-row"><div class="info-card-label">現場名</div><div class="info-card-val" id="confSite"></div></div>
@@ -485,17 +524,9 @@ if ('serviceWorker' in navigator) {
       <div class="confirm-section-title comment-title">コメント</div>
       <div class="comment-preview" id="confComment"></div>
     </div>
-    <div class="folder-path" id="folderPath"></div>
-    <div id="uploadProgressArea" style="display:none">
-      <div class="upload-progress">
-        <div class="upload-progress-title">Dropboxへアップロード中...</div>
-        <div class="upload-bar-wrap"><div class="upload-bar" id="uploadBar" style="width:0%"></div></div>
-        <div class="upload-status" id="uploadStatus">準備中...</div>
-      </div>
-    </div>
     <div class="btn-stack" id="saveBtnArea">
-      <button class="btn btn-primary" id="btnSaveDropbox" onclick="saveToDropbox()">☁ Dropboxへ保存する</button>
       <button class="btn btn-secondary" onclick="goBackToComment()">← コメントを修正する</button>
+      <button class="btn btn-secondary" onclick="showScreen(0)">← 現場一覧に戻る</button>
       <button class="btn btn-danger" onclick="confirmDeleteSite()">✕ この現場データを削除する</button>
     </div>
   </div>
@@ -504,13 +535,26 @@ if ('serviceWorker' in navigator) {
 <!-- SCREEN 7: 完了 -->
 <div class="screen" id="screen7">
   <div class="screen-inner safe-bottom" style="padding-top:32px;">
-    <div class="complete-icon">✓</div>
-    <p class="complete-title">保存完了</p>
-    <p class="complete-desc" id="completeDesc"></p>
-    <div class="folder-path" id="completePath"></div>
-    <div class="notice-ok">✅ Dropboxへの自動保存が完了しました。</div>
-    <div class="btn-stack">
-      <button class="btn btn-primary" onclick="showScreen(0)">現場一覧に戻る</button>
+    <!-- アップロード進捗（処理中） -->
+    <div id="uploadProgressInline" style="display:none;">
+      <div class="complete-icon" style="font-size:28px;">☁</div>
+      <p class="complete-title" style="font-size:20px;">Dropboxへ保存中...</p>
+      <div class="folder-path" id="completePath"></div>
+      <div class="upload-progress" style="margin-top:16px;">
+        <div class="upload-bar-wrap"><div class="upload-bar" id="uploadBarInline" style="width:0%"></div></div>
+        <div class="upload-status" id="uploadStatusInline" style="margin-top:8px;font-size:12px;color:var(--text-sub);">準備中...</div>
+      </div>
+    </div>
+    <!-- 完了表示 -->
+    <div id="saveCompleteArea">
+      <div class="complete-icon">✓</div>
+      <p class="complete-title">保存完了</p>
+      <p class="complete-desc" id="completeDesc"></p>
+      <div class="folder-path" id="completePathDisplay"></div>
+      <div class="notice-ok">✅ Dropboxへの自動保存が完了しました。</div>
+      <div class="btn-stack">
+        <button class="btn btn-primary" onclick="showScreen(0)">現場一覧に戻る</button>
+      </div>
     </div>
   </div>
 </div>
@@ -574,6 +618,161 @@ if ('serviceWorker' in navigator) {
   </div>
 </div>
 
+<!-- SCREEN: 承諾書確認 -->
+<div class="screen" id="screenConsentView">
+  <div class="screen-inner safe-bottom">
+    <p class="screen-title">承諾書の確認</p>
+    <p class="screen-desc">取得済みの承諾書です。</p>
+    <div class="info-card" style="margin-bottom:16px;">
+      <div class="info-card-row"><div class="info-card-label">日付</div><div class="info-card-val" id="viewConsentDate"></div></div>
+      <div class="info-card-row"><div class="info-card-label">契約管理No.</div><div class="info-card-val" id="viewConsentNo"></div></div>
+      <div class="info-card-row"><div class="info-card-label">ご住所</div><div class="info-card-val" id="viewConsentAddress"></div></div>
+      <div class="info-card-row"><div class="info-card-label">承諾</div><div class="info-card-val" id="viewConsentChoice"></div></div>
+      <div class="info-card-row"><div class="info-card-label">取得日時</div><div class="info-card-val" id="viewConsentSavedAt"></div></div>
+    </div>
+    <div class="consent-section-title">■ 承諾書（全文）</div>
+    <div style="background:#fff;border-radius:var(--radius-sm);border:1px solid var(--border);overflow:hidden;margin-bottom:20px;">
+      <img id="viewConsentSignature" src="" style="width:100%;display:block;">
+    </div>
+    <div class="btn-stack">
+      <button class="btn btn-secondary" onclick="showScreen(0)">← 現場一覧に戻る</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 9a: 承諾書 STEP1 担当者入力 -->
+<div class="screen" id="screen9a">
+  <div class="screen-inner safe-bottom">
+    <p class="screen-title">承諾書 — 必要事項入力</p>
+    <p class="screen-desc">担当者が必要事項を入力してください。</p>
+    <div class="form-group">
+      <label class="form-label">日付 <span class="req">*</span></label>
+      <input type="text" id="consentDate" placeholder="例：2026年5月8日">
+    </div>
+    <div class="form-group">
+      <label class="form-label">契約管理 No. <span class="req">*</span></label>
+      <input type="text" id="consentContractNo" placeholder="例：K2026-0123">
+    </div>
+    <div class="form-group">
+      <label class="form-label">ご住所 <span class="req">*</span></label>
+      <input type="text" id="consentAddress" placeholder="例：北九州市小倉北区〇〇町1-2-3">
+    </div>
+    <div class="btn-stack" style="margin-top:32px;">
+      <button class="btn btn-primary" id="btnConsent9aNext" onclick="goConsent9b()" disabled>承諾書内容の説明へ →</button>
+      <button class="btn btn-secondary" onclick="showScreen(0)">← 現場一覧に戻る</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 9b: 承諾書 STEP2 本文表示（施主に見せる） -->
+<div class="screen" id="screen9b">
+  <div class="screen-inner safe-bottom">
+    <p class="screen-title">承諾書の内容確認</p>
+    <p class="screen-desc" style="color:var(--warn);">📋 この画面を施主様にお見せしながら説明してください。</p>
+
+    <!-- 掲載予定写真 -->
+    <div class="consent-section-title">■ 掲載予定の写真</div>
+    <div class="consent-photo-grid" id="consentPhotoGrid"></div>
+
+    <!-- 承諾書本文 -->
+    <div class="consent-doc">
+      <h2>リフォーム工事に関する事例紹介について</h2>
+      <p>組合員様へ<br>この度は弊社にリフォーム工事をご依頼いただき、誠にありがとうございます。弊社では、今後の広告・広報活動において、施工写真や工事内容の一部を事例紹介として掲載させていただく場合がございます。掲載の場合の情報の取扱いについて、下記の通りご説明いたします。</p>
+      <h3>■ 利用目的</h3>
+      <p>弊社で今後リフォーム工事をご検討されるその他の組合員様に対する事例紹介や、下記の利用媒体の広報活動に利用することを目的とします。</p>
+      <h3>■ 利用媒体</h3>
+      <ul>
+        <li>ホームページ</li>
+        <li>広報チラシ、パンフレット</li>
+        <li>Instagram その他SNS媒体</li>
+      </ul>
+      <h3>■ 掲載内容</h3>
+      <ul>
+        <li>施工前、施工後の写真（外観・内観）</li>
+        <li>工事内容（水廻り改修工事、外壁塗装工事、外構工事、他）</li>
+        <li>リフォームの主旨や組合員様の声</li>
+        <li>施工地域の市町村表記</li>
+      </ul>
+      <h3>■ 掲載にあたっての禁止事項</h3>
+      <ul>
+        <li>個人名や住所など、直接的に組合員様が特定される情報は掲載いたしません。</li>
+        <li>施工写真など人物が写っているものは掲載いたしません。</li>
+        <li>リフォーム主旨や組合員様の声などの文章掲載については、別途、事前に組合員様のご確認をいただき、承諾を得た内容以外は掲載いたしません。</li>
+        <li>承諾後であっても、取り消しのご要望があった場合は掲載いたしません。</li>
+      </ul>
+    </div>
+
+    <div class="btn-stack">
+      <button class="btn btn-primary" onclick="goConsent9c()">説明が完了したら → 可否選択へ</button>
+      <button class="btn btn-secondary" onclick="showScreen('screen9a')">← 入力に戻る</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 9c: 承諾書 STEP3 可否選択（施主が選ぶ） -->
+<div class="screen" id="screen9c">
+  <div class="screen-inner safe-bottom">
+    <p class="screen-title">承諾の意思表示</p>
+    <p class="screen-desc" style="color:var(--warn);">📋 施主様にご選択いただいてください。</p>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;margin-bottom:24px;font-size:13px;line-height:1.8;">
+      以上の内容について下記よりご選択をお願いいたします。
+    </div>
+    <div class="consent-choice" style="margin-bottom:40px;">
+      <div class="consent-choice-btn" id="choiceOk" onclick="selectConsent('ok')">☐ 承諾する</div>
+      <div class="consent-choice-btn" id="choiceNg" onclick="selectConsent('ng')">☐ 承諾しない</div>
+    </div>
+    <div class="btn-stack">
+      <button class="btn btn-primary" id="btnConsent9cNext" onclick="goConsent9d()" disabled>選択完了 → ご署名へ</button>
+      <button class="btn btn-secondary" onclick="showScreen('screen9b')">← 内容確認に戻る</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 9d: 承諾書 STEP4 署名（施主がサイン） -->
+<div class="screen" id="screen9d">
+  <div class="screen-inner safe-bottom">
+    <p class="screen-title">ご署名</p>
+    <p class="screen-desc" style="color:var(--warn);">📋 施主様に枠内へご署名いただいてください。</p>
+    <p class="signature-hint">指またはスタイラスでご署名ください</p>
+    <div class="signature-area">
+      <canvas class="signature-canvas" id="signatureCanvas" height="200"></canvas>
+    </div>
+    <button class="signature-clear" onclick="clearSignature()">✕ 署名をクリア</button>
+    <div class="btn-stack">
+      <button class="btn btn-primary" id="btnConsent9dNext" onclick="goConsent9e()" disabled>署名完了 → 最終確認へ</button>
+      <button class="btn btn-secondary" onclick="showScreen('screen9c')">← 可否選択に戻る</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 9e: 承諾書 STEP5 最終確認 -->
+<div class="screen" id="screen9e">
+  <div class="screen-inner safe-bottom">
+    <p class="screen-title">最終確認</p>
+    <p class="screen-desc">内容をご確認いただき、問題なければ保存してください。</p>
+
+    <div class="info-card" style="margin-bottom:16px;">
+      <div class="info-card-row"><div class="info-card-label">日付</div><div class="info-card-val" id="confConsentDate"></div></div>
+      <div class="info-card-row"><div class="info-card-label">契約管理No.</div><div class="info-card-val" id="confConsentNo"></div></div>
+      <div class="info-card-row"><div class="info-card-label">ご住所</div><div class="info-card-val" id="confConsentAddress"></div></div>
+      <div class="info-card-row"><div class="info-card-label">承諾</div><div class="info-card-val" id="confConsentChoice"></div></div>
+    </div>
+
+    <div class="consent-section-title">■ ご署名</div>
+    <div style="background:#fff;border-radius:var(--radius-sm);border:1px solid var(--border);overflow:hidden;margin-bottom:20px;">
+      <img id="confSignatureImg" src="" style="width:100%;display:block;">
+    </div>
+
+    <div class="consent-section-title">■ 掲載予定の写真</div>
+    <div class="consent-photo-grid" id="consentPhotoGridConfirm"></div>
+
+    <div class="btn-stack" style="margin-top:8px;">
+      <button class="btn btn-primary" onclick="saveConsent()">✓ 確定して保存する</button>
+      <button class="btn btn-secondary" onclick="showScreen('screen9d')">← 署名に戻る</button>
+    </div>
+  </div>
+</div>
+
 <!-- PHOTO CONFIRM SCREEN -->
 <div class="screen" id="screenConfirm">
   <div class="screen-inner">
@@ -591,7 +790,7 @@ if ('serviceWorker' in navigator) {
 <canvas id="canvasEl" style="display:none"></canvas>
 
 <script>
-const STORAGE_KEY = 'ba_shot_v3';
+const STORAGE_KEY = 'ba_shot_v4';
 const SETTINGS_KEY = 'ba_shot_settings_v2';
 
 const CHECKLIST = {
@@ -812,14 +1011,14 @@ function deleteSite(id) { saveSites(loadSites().filter(s => s.id !== id)); }
 function getStatus(site) {
   const angles = site.angles || [];
   const hasPair = angles.some(a => a.after);
-  const allDone = angles.length > 0 && angles.every(a => a.after);
+  if (site.consent) return site.consent.agreed ? 'consented' : 'declined';
   if (hasPair && site.comment) return 'done';
   if (hasPair) return 'comment';
   return 'after';
 }
-const STATUS_LABELS = { after: 'After写真待ち', comment: 'コメント入力待ち', done: '完了' };
-const STATUS_BADGE  = { after: 'badge-after', comment: 'badge-comment', done: 'badge-done' };
-const STATUS_BAR    = { after: 'bar-after', comment: 'bar-comment', done: 'bar-done' };
+const STATUS_LABELS = { after: 'After写真待ち', comment: 'コメント入力待ち', done: '承諾書未取得', consented: '承諾済み', declined: '承諾なし' };
+const STATUS_BADGE  = { after: 'badge-after', comment: 'badge-comment', done: 'badge-done', consented: 'badge-consented', declined: 'badge-declined' };
+const STATUS_BAR    = { after: 'bar-after', comment: 'bar-comment', done: 'bar-done', consented: 'bar-consented', declined: 'bar-declined' };
 
 // ===== UTILS =====
 function getTodayStr() { const d = new Date(); return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`; }
@@ -858,42 +1057,108 @@ function renderSiteList() {
     el.innerHTML = `<div class="empty-state"><div class="empty-icon">📷</div>登録された現場はありません。<br>「新しい現場を登録」から始めてください。</div>`;
     return;
   }
-  const order = { after: 0, comment: 1, done: 2 };
+  const order = { after: 0, comment: 1, done: 2, consented: 3, declined: 3 };
   const sorted = [...sites].sort((a,b) => order[getStatus(a)] - order[getStatus(b)]);
   el.innerHTML = '';
   sorted.forEach(site => {
     const st = getStatus(site);
     const angles = site.angles || [];
+    const hasBefore = angles.length > 0;
+    const hasAfter = angles.some(a => a.after);
+    const hasComment = !!(site.comment && site.comment.trim());
+    const hasConsent = !!(site.consent);
+    const consentAgreed = hasConsent ? site.consent.agreed : null;
+
+    // 進捗ステップの状態
+    const stepBefore  = hasBefore  ? 'done' : 'active';
+    const stepAfter   = hasAfter   ? 'done' : (hasBefore ? 'active' : '');
+    const stepComment = hasComment ? 'done' : (hasAfter ? 'active' : '');
+    const stepConsent = hasConsent
+      ? (consentAgreed ? 'consent-ok' : 'consent-ng')
+      : (hasComment ? 'active' : '');
+    const stepSave    = site.uploadedAt ? 'done' : (hasComment ? 'active' : '');
+
+    // アイコン
+    const iconBefore  = hasBefore  ? '✓' : '📷';
+    const iconAfter   = hasAfter   ? '✓' : '📸';
+    const iconComment = hasComment ? '✓' : '✏️';
+    const iconConsent = hasConsent ? (consentAgreed ? '✓' : '－') : '📋';
+    const iconSave    = site.uploadedAt ? '✓' : '☁';
+
+    // サイドバーカラー
+    const barClass = STATUS_BAR[st] || 'bar-after';
+
+    // サムネイル
     const thumbs = angles.slice(0,3).map(a => `<div class="site-card-thumb"><img src="${a.before}"></div>`).join('');
     const more = angles.length > 3 ? `<div class="site-card-thumb-more">+${angles.length-3}</div>` : '';
+
     const card = document.createElement('div');
     card.className = 'site-card';
-    card.onclick = () => openSite(site.id);
+
     card.innerHTML = `
-      <div class="site-card-status-bar ${STATUS_BAR[st]}"></div>
+      <div class="site-card-status-bar ${barClass}"></div>
       <div class="site-card-top">
         <div class="site-card-name">${site.siteName}</div>
-        <div class="status-badge ${STATUS_BADGE[st]}">${STATUS_LABELS[st]}</div>
       </div>
       <div class="site-card-meta">
         <div class="site-card-tag">${site.workType}</div>
         <div class="site-card-date">${site.staffName}｜${fmtDate(site.createdAt)}｜${angles.length}アングル</div>
       </div>
       ${thumbs ? `<div class="site-card-photos">${thumbs}${more}</div>` : ''}
+      <div class="progress-steps">
+        <div class="prog-step ${stepBefore}" data-action="before" data-id="${site.id}">
+          <div class="prog-icon">${iconBefore}</div>
+          <div class="prog-label">Before</div>
+        </div>
+        <div class="prog-connector ${hasBefore ? 'done' : ''}"></div>
+        <div class="prog-step ${stepAfter} ${hasBefore ? 'clickable' : ''}" data-action="after" data-id="${site.id}">
+          <div class="prog-icon">${iconAfter}</div>
+          <div class="prog-label">After</div>
+        </div>
+        <div class="prog-connector ${hasAfter ? 'done' : ''}"></div>
+        <div class="prog-step ${stepComment} ${hasAfter ? 'clickable' : ''}" data-action="comment" data-id="${site.id}">
+          <div class="prog-icon">${iconComment}</div>
+          <div class="prog-label">コメント</div>
+        </div>
+        <div class="prog-connector ${hasComment ? 'done' : ''}"></div>
+        <div class="prog-step ${stepConsent} ${hasComment ? 'clickable' : ''}" data-action="consent" data-id="${site.id}">
+          <div class="prog-icon">${iconConsent}</div>
+          <div class="prog-label">承諾書${hasConsent ? (consentAgreed ? '\n承諾' : '\n不承諾') : ''}</div>
+        </div>
+        <div class="prog-connector ${hasConsent ? 'done' : ''}"></div>
+        <div class="prog-step ${stepSave} ${hasComment ? 'clickable' : ''}" data-action="save" data-id="${site.id}">
+          <div class="prog-icon">${iconSave}</div>
+          <div class="prog-label">${site.uploadedAt ? '保存済み' : 'Dropbox'}</div>
+        </div>
+      </div>
       <div class="site-card-delete-row">
-        <button class="site-card-delete-btn" onclick="event.stopPropagation();deleteSiteFromList('${site.id}')">✕ 削除</button>
+        <button class="site-card-delete-btn" data-delete="${site.id}">✕ 削除</button>
       </div>`;
     el.appendChild(card);
   });
+
+  // イベント委任でステップタップを処理
+  el.querySelectorAll('.prog-step.clickable').forEach(step => {
+    step.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const action = step.dataset.action;
+      const id = step.dataset.id;
+      handleStepTap(action, id);
+    });
+  });
+  el.querySelectorAll('[data-delete]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteSiteFromList(btn.dataset.delete);
+    });
+  });
 }
 
-function openSite(id) {
+function handleStepTap(action, id) {
   sess.siteId = id;
   const site = getSite(id);
-  const st = getStatus(site);
-  if (st === 'after') {
+  if (action === 'after') {
     sess.checklistMode = 'after';
-    // 保存済みAfterデータを保持したまま引き継ぐ
     sess.angles = site.angles.map(a => ({ before: a.before, after: a.after || null }));
     sess.currentAngleIdx = 0;
     document.getElementById('checklistDesc').textContent = `${site.siteName} のAfter撮影前に確認してください。`;
@@ -901,18 +1166,54 @@ function openSite(id) {
     buildChecklist(site.workType);
     updateStepBar(4, 1);
     showScreen(2);
-  } else if (st === 'comment') {
+  } else if (action === 'comment') {
     sess.angles = site.angles || [];
     document.getElementById('siteComment').value = site.comment || '';
     updateCharCount();
     updateStepBar(4, 3);
     showScreen(5);
+  } else if (action === 'save') {
+    sess.siteId = id;
+    saveToDropboxFromList(id);
+  } else if (action === 'consent') {
+    if (site.consent) {
+      openConsentView(id);
+    } else {
+      openConsent(id);
+    }
+  }
+}
+
+function openSite(id) {
+  // 現場名タップ時 → ステータスに応じて適切な画面へ
+  sess.siteId = id;
+  const site = getSite(id);
+  const st = getStatus(site);
+  if (st === 'after') {
+    handleStepTap('after', id);
+  } else if (st === 'comment') {
+    handleStepTap('comment', id);
   } else {
     sess.angles = site.angles || [];
     buildConfirmScreen(site);
     updateStepBar(4, 4);
     showScreen(6);
   }
+}
+
+function openConsentView(id) {
+  const site = getSite(id);
+  const c = site.consent;
+  if (!c) return;
+  document.getElementById('viewConsentDate').textContent = c.date || '';
+  document.getElementById('viewConsentNo').textContent = c.contractNo || '';
+  document.getElementById('viewConsentAddress').textContent = c.address || '';
+  document.getElementById('viewConsentChoice').textContent = c.agreed ? '☑ 承諾する' : '☑ 承諾しない';
+  const d = new Date(c.savedAt);
+  document.getElementById('viewConsentSavedAt').textContent = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+  document.getElementById('viewConsentSignature').src = c.pngDataUrl || '';
+  updateStepBar(null, 0);
+  showScreen('screenConsentView');
 }
 
 // ===== SCREEN 1 =====
@@ -1375,11 +1676,6 @@ function buildConfirmScreen(site) {
   document.getElementById('confAngles').textContent = `${pairedAngles.length} ペア保存`;
   document.getElementById('confComment').textContent = site.comment || '';
 
-  const basePath = getBasePath();
-  const folder = `${site.siteName}_${site.workType}_${getTodayStr()}`;
-  const fullPath = basePath ? `${basePath}/${site.staffName}/${folder}` : `（設定未完了）/${site.staffName}/${folder}`;
-  document.getElementById('folderPath').textContent = fullPath + ' /';
-
   const g = document.getElementById('confPairGrid');
   g.innerHTML = '';
   pairedAngles.forEach((a, i) => {
@@ -1393,7 +1689,6 @@ function buildConfirmScreen(site) {
     g.appendChild(row);
   });
 
-  document.getElementById('uploadProgressArea').style.display = 'none';
   document.getElementById('saveBtnArea').style.display = 'flex';
 }
 
@@ -1446,6 +1741,11 @@ async function uploadToDropbox(blob, dropboxPath, token) {
 }
 
 async function saveToDropbox() {
+  // screen6から呼ばれる場合（現在は使用しないが互換性のために残す）
+  await saveToDropboxFromList(sess.siteId);
+}
+
+async function saveToDropboxFromList(id) {
   let token;
   try {
     token = await getValidToken();
@@ -1454,14 +1754,13 @@ async function saveToDropbox() {
     return;
   }
 
-  const site = getSite(sess.siteId);
+  const site = getSite(id);
   const basePath = getBasePath();
   if (!basePath) { alert('保存先パスが設定されていません。\n右上の⚙から設定してください。'); return; }
 
   const folder = `${site.siteName}_${site.workType}_${getTodayStr()}`;
   const dropboxFolder = `${basePath}/${site.staffName}/${folder}`;
 
-  // after有りのアングルのみ保存対象
   const pairedAngles = (site.angles||[]).filter(a => a.after);
   const files = [];
   pairedAngles.forEach((a, i) => {
@@ -1470,7 +1769,6 @@ async function saveToDropbox() {
     files.push({ dataUrl: a.after, name: `angle${num}_after.jpg` });
   });
 
-  // コメントtxt
   const d = new Date(site.createdAt);
   const dateStr = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
   const txt = [
@@ -1487,16 +1785,20 @@ async function saveToDropbox() {
   ].join('\n');
   const txtBlob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
 
-  // UI切り替え
-  document.getElementById('saveBtnArea').style.display = 'none';
-  document.getElementById('uploadProgressArea').style.display = 'block';
-  const total = files.length + 1;
+  const total = files.length + 1 + (site.consent && site.consent.pngDataUrl ? 1 : 0);
   let done = 0;
+
+  // アップロード進捗はscreen7のエリアを使う
+  showScreen(7);
+  document.getElementById('completeDesc').textContent = 'アップロード中...';
+  document.getElementById('completePath').textContent = dropboxFolder + ' /';
+  document.getElementById('saveCompleteArea').style.display = 'none';
+  document.getElementById('uploadProgressInline').style.display = 'block';
 
   const updateProgress = (label) => {
     const pct = Math.round(done / total * 100);
-    document.getElementById('uploadBar').style.width = pct + '%';
-    document.getElementById('uploadStatus').textContent = label;
+    document.getElementById('uploadBarInline').style.width = pct + '%';
+    document.getElementById('uploadStatusInline').textContent = label;
   };
 
   try {
@@ -1510,21 +1812,376 @@ async function saveToDropbox() {
     updateProgress(`comment.txt をアップロード中... (${done+1}/${total})`);
     await uploadToDropbox(txtBlob, `${dropboxFolder}/comment.txt`, token);
     done++;
-    updateProgress('完了');
+
+    if (site.consent && site.consent.pngDataUrl) {
+      updateProgress(`consent.png をアップロード中... (${done+1}/${total})`);
+      const consentBlob = dataUrlToBlob(site.consent.pngDataUrl);
+      await uploadToDropbox(consentBlob, `${dropboxFolder}/consent.png`, token);
+      done++;
+    }
 
     upsertSite({ ...site, uploadedAt: new Date().toISOString() });
 
+    document.getElementById('uploadProgressInline').style.display = 'none';
+    document.getElementById('saveCompleteArea').style.display = 'block';
     document.getElementById('completeDesc').textContent =
-      `${(site.angles||[]).length}アングル分（計${files.length}枚）＋コメントtxtを\nDropboxへ保存しました。`;
-    document.getElementById('completePath').textContent = dropboxFolder + ' /';
-    showScreen(7);
+      `${(site.angles||[]).length}アングル分（計${files.length}枚）＋コメントtxt${site.consent ? '＋承諾書PNG' : ''}\nDropboxへ保存しました。`;
 
   } catch(e) {
-    document.getElementById('uploadProgressArea').style.display = 'none';
-    document.getElementById('saveBtnArea').style.display = 'flex';
+    document.getElementById('uploadProgressInline').style.display = 'none';
+    document.getElementById('saveCompleteArea').style.display = 'block';
+    document.getElementById('completeDesc').textContent = '保存に失敗しました。';
     alert('Dropboxへの保存に失敗しました。\nトークンや設定を確認してください。\n\n' + e.message);
+    showScreen(0);
   }
 }
+
+// ===== CONSENT =====
+let consentChoice = null;
+let signaturePad = { drawing: false, lastX: 0, lastY: 0 };
+
+// STEP1: 担当者が必要事項入力して openConsent から開始
+function openConsent(id) {
+  sess.siteId = id;
+  consentChoice = null;
+  const site = getSite(id);
+  const existing = site.consent || {};
+  document.getElementById('consentDate').value = existing.date || getTodayJa();
+  document.getElementById('consentContractNo').value = existing.contractNo || '';
+  document.getElementById('consentAddress').value = existing.address || '';
+  checkConsent9aReady();
+  updateStepBar(5, 1);
+  showScreen('screen9a');
+}
+
+function getTodayJa() {
+  const d = new Date();
+  return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
+}
+
+function checkConsent9aReady() {
+  const date = document.getElementById('consentDate').value.trim();
+  const no = document.getElementById('consentContractNo').value.trim();
+  const addr = document.getElementById('consentAddress').value.trim();
+  document.getElementById('btnConsent9aNext').disabled = !(date && no && addr);
+}
+
+// STEP2: 承諾書本文 + 写真を施主に見せる
+function goConsent9b() {
+  const site = getSite(sess.siteId);
+  // 写真グリッド構築
+  const buildGrid = (id) => {
+    const grid = document.getElementById(id);
+    grid.innerHTML = '';
+    const paired = (site.angles || []).filter(a => a.after);
+    paired.forEach((a, i) => {
+      grid.innerHTML += `
+        <div class="consent-photo-pair">
+          <div class="pair-label bl">BEFORE ${i+1}</div>
+          <div class="consent-photo-img"><img src="${a.before}"></div>
+        </div>
+        <div class="consent-photo-pair">
+          <div class="pair-label al">AFTER ${i+1}</div>
+          <div class="consent-photo-img"><img src="${a.after}"></div>
+        </div>`;
+    });
+  };
+  buildGrid('consentPhotoGrid');
+  updateStepBar(5, 2);
+  showScreen('screen9b');
+}
+
+// STEP3: 可否選択（施主が選ぶ）
+function goConsent9c() {
+  consentChoice = null;
+  document.getElementById('choiceOk').className = 'consent-choice-btn';
+  document.getElementById('choiceNg').className = 'consent-choice-btn';
+  document.getElementById('btnConsent9cNext').disabled = true;
+  updateStepBar(5, 3);
+  showScreen('screen9c');
+}
+
+function selectConsent(choice) {
+  consentChoice = choice;
+  document.getElementById('choiceOk').className = 'consent-choice-btn' + (choice === 'ok' ? ' selected-ok' : '');
+  document.getElementById('choiceNg').className = 'consent-choice-btn' + (choice === 'ng' ? ' selected-ng' : '');
+  document.getElementById('btnConsent9cNext').disabled = false;
+}
+
+// STEP4: 署名（施主がサイン）
+function goConsent9d() {
+  updateStepBar(5, 4);
+  showScreen('screen9d');
+  // Canvasサイズをレンダリング後に設定
+  requestAnimationFrame(() => initSignaturePad());
+}
+
+// STEP5: 最終確認
+function goConsent9e() {
+  if (isSignatureEmpty()) {
+    alert('ご署名をいただいてから進んでください');
+    return;
+  }
+  // 確認画面に値を転記
+  document.getElementById('confConsentDate').textContent = document.getElementById('consentDate').value;
+  document.getElementById('confConsentNo').textContent = document.getElementById('consentContractNo').value;
+  document.getElementById('confConsentAddress').textContent = document.getElementById('consentAddress').value;
+  document.getElementById('confConsentChoice').textContent = consentChoice === 'ok' ? '☑ 承諾する' : '☑ 承諾しない';
+
+  // 署名プレビュー
+  const sigCanvas = document.getElementById('signatureCanvas');
+  document.getElementById('confSignatureImg').src = sigCanvas.toDataURL('image/png');
+
+  // 写真グリッド（確認用）
+  const site = getSite(sess.siteId);
+  const confirmGrid = document.getElementById('consentPhotoGridConfirm');
+  confirmGrid.innerHTML = '';
+  (site.angles || []).filter(a => a.after).forEach((a, i) => {
+    confirmGrid.innerHTML += `
+      <div class="consent-photo-pair">
+        <div class="pair-label bl">BEFORE ${i+1}</div>
+        <div class="consent-photo-img"><img src="${a.before}"></div>
+      </div>
+      <div class="consent-photo-pair">
+        <div class="pair-label al">AFTER ${i+1}</div>
+        <div class="consent-photo-img"><img src="${a.after}"></div>
+      </div>`;
+  });
+
+  updateStepBar(5, 5);
+  showScreen('screen9e');
+}
+
+// --- 署名パッド ---
+function initSignaturePad() {
+  const canvas = document.getElementById('signatureCanvas');
+  if (!canvas) return;
+  // イベント重複登録を防ぐためcloneで差し替え
+  const newCanvas = canvas.cloneNode(false);
+  canvas.parentNode.replaceChild(newCanvas, canvas);
+  const c = document.getElementById('signatureCanvas');
+
+  const rect = c.parentElement.getBoundingClientRect();
+  c.width = rect.width > 10 ? rect.width : window.innerWidth - 40;
+  c.height = 200;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, c.width, c.height);
+  ctx.strokeStyle = '#1a1a1f';
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  c.addEventListener('touchstart', sigStart, { passive: false });
+  c.addEventListener('touchmove', sigMove, { passive: false });
+  c.addEventListener('touchend', sigEnd);
+  c.addEventListener('mousedown', sigStartM);
+  c.addEventListener('mousemove', sigMoveM);
+  c.addEventListener('mouseup', sigEnd);
+
+  // 署名ボタン監視リセット
+  document.getElementById('btnConsent9dNext').disabled = true;
+}
+
+function getPos(canvas, e) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  if (e.touches) {
+    return { x: (e.touches[0].clientX - rect.left) * scaleX, y: (e.touches[0].clientY - rect.top) * scaleY };
+  }
+  return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
+}
+function sigStart(e) {
+  e.preventDefault();
+  const c = document.getElementById('signatureCanvas');
+  const pos = getPos(c, e);
+  signaturePad.drawing = true; signaturePad.lastX = pos.x; signaturePad.lastY = pos.y;
+}
+function sigStartM(e) {
+  const c = document.getElementById('signatureCanvas');
+  const pos = getPos(c, e);
+  signaturePad.drawing = true; signaturePad.lastX = pos.x; signaturePad.lastY = pos.y;
+}
+function sigMove(e) {
+  e.preventDefault();
+  if (!signaturePad.drawing) return;
+  const c = document.getElementById('signatureCanvas');
+  const ctx = c.getContext('2d');
+  const pos = getPos(c, e);
+  ctx.beginPath(); ctx.moveTo(signaturePad.lastX, signaturePad.lastY);
+  ctx.lineTo(pos.x, pos.y); ctx.stroke();
+  signaturePad.lastX = pos.x; signaturePad.lastY = pos.y;
+  document.getElementById('btnConsent9dNext').disabled = isSignatureEmpty();
+}
+function sigMoveM(e) {
+  if (!signaturePad.drawing) return;
+  const c = document.getElementById('signatureCanvas');
+  const ctx = c.getContext('2d');
+  const pos = getPos(c, e);
+  ctx.beginPath(); ctx.moveTo(signaturePad.lastX, signaturePad.lastY);
+  ctx.lineTo(pos.x, pos.y); ctx.stroke();
+  signaturePad.lastX = pos.x; signaturePad.lastY = pos.y;
+  document.getElementById('btnConsent9dNext').disabled = isSignatureEmpty();
+}
+function sigEnd() {
+  signaturePad.drawing = false;
+  document.getElementById('btnConsent9dNext').disabled = isSignatureEmpty();
+}
+function isSignatureEmpty() {
+  const canvas = document.getElementById('signatureCanvas');
+  if (!canvas) return true;
+  const ctx = canvas.getContext('2d');
+  const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i] < 250 || data[i+1] < 250 || data[i+2] < 250) return false;
+  }
+  return true;
+}
+function clearSignature() {
+  const c = document.getElementById('signatureCanvas');
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, c.width, c.height);
+  document.getElementById('btnConsent9dNext').disabled = true;
+}
+
+// --- PNG生成 ---
+async function generateConsentPng(site, consentData) {
+  const W = 800, MARGIN = 48;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = 1800;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, W, 1800);
+
+  let y = 48;
+  const lh = 26;
+
+  function line(x1, x2, yy, col) {
+    ctx.strokeStyle = col || '#cccccc'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x1, yy); ctx.lineTo(x2, yy); ctx.stroke();
+  }
+
+  // タイトル
+  ctx.font = '700 20px sans-serif'; ctx.fillStyle = '#1a1a1f'; ctx.textAlign = 'center';
+  ctx.fillText('リフォーム工事に関する事例紹介について', W/2, y); y += 36;
+  ctx.textAlign = 'left';
+
+  // 区切り線（現場情報行を削除、タイトル直下に線）
+  line(MARGIN, W-MARGIN, y); y += 20;
+
+  // 本文
+  const bodyLines = [
+    ['p','組合員様へ'],
+    ['p','この度は弊社にリフォーム工事をご依頼いただき、誠にありがとうございます。弊社では、今後の広告・広報活動において、'],
+    ['p','施工写真や工事内容の一部を事例紹介として掲載させていただく場合がございます。'],
+    ['h','■ 利用目的'],
+    ['p','弊社で今後リフォーム工事をご検討されるその他の組合員様に対する事例紹介や、下記媒体の広報活動に利用することを目的とします。'],
+    ['h','■ 利用媒体'],
+    ['p','・ホームページ　・広報チラシ、パンフレット　・Instagram その他SNS媒体'],
+    ['h','■ 掲載内容'],
+    ['p','・施工前、施工後の写真（外観・内観）　・工事内容　・リフォームの主旨や組合員様の声　・施工地域の市町村表記'],
+    ['h','■ 掲載にあたっての禁止事項'],
+    ['p','・個人名や住所など、直接的に組合員様が特定される情報は掲載いたしません。'],
+    ['p','・施工写真など人物が写っているものは掲載いたしません。'],
+    ['p','・文章掲載については、別途、事前に組合員様のご確認をいただき、承諾を得た内容以外は掲載いたしません。'],
+    ['p','・承諾後であっても、取り消しのご要望があった場合は掲載いたしません。'],
+  ];
+  bodyLines.forEach(([type, text]) => {
+    if (type === 'h') { ctx.font = '700 13px sans-serif'; ctx.fillStyle = '#1a1a1f'; }
+    else { ctx.font = '400 13px sans-serif'; ctx.fillStyle = '#333333'; }
+    ctx.fillText(text, MARGIN, y); y += lh;
+  });
+
+  y += 12; line(MARGIN, W-MARGIN, y); y += 24;
+
+  // 承諾チェック
+  ctx.font = '700 15px sans-serif'; ctx.fillStyle = '#1a1a1f';
+  ctx.fillText(consentData.agreed ? '☑ 承諾する' : '☐ 承諾する', MARGIN + 60, y);
+  ctx.fillText(consentData.agreed ? '☐ 承諾しない' : '☑ 承諾しない', MARGIN + 260, y);
+  y += 32;
+
+  // 記入欄
+  const fields = [['日付', consentData.date], ['契約管理 No.', `（${consentData.contractNo}）`], ['ご住所', consentData.address]];
+  ctx.font = '400 13px sans-serif';
+  fields.forEach(([label, val]) => {
+    ctx.fillStyle = '#555555'; ctx.fillText(`${label}：`, MARGIN + 80, y);
+    ctx.fillStyle = '#1a1a1f'; ctx.fillText(val, MARGIN + 180, y);
+    line(MARGIN + 180, W-MARGIN, y+4, '#aaaaaa'); y += 34;
+  });
+
+  // 署名ラベル → 下行に署名画像
+  y += 4;
+  ctx.fillStyle = '#555555'; ctx.font = '400 13px sans-serif';
+  ctx.fillText('ご署名：', MARGIN + 80, y);
+  y += 16; // ラベルの下に余白を取ってから署名画像を配置
+  const sigCanvas = document.getElementById('signatureCanvas');
+  const sigAspect = sigCanvas.width / sigCanvas.height;
+  const sigW = W - MARGIN*2 - 80;
+  const sigH = sigW / sigAspect;
+  ctx.drawImage(sigCanvas, MARGIN + 80, y, sigW, sigH);
+  line(MARGIN + 80, W-MARGIN, y + sigH + 4, '#aaaaaa');
+  y += sigH + 24;
+
+  // フッター
+  y += 8; line(MARGIN, W-MARGIN, y); y += 18;
+  ctx.font = '400 11px sans-serif'; ctx.fillStyle = '#888888';
+  ctx.fillText(`出力日時：${new Date().toLocaleString('ja-JP')}　BA Shot により生成`, MARGIN, y);
+  y += 28;
+
+  const final = document.createElement('canvas');
+  final.width = W; final.height = y;
+  final.getContext('2d').drawImage(canvas, 0, 0);
+  return final.toDataURL('image/png');
+}
+
+// 最終確定・保存
+async function saveConsent() {
+  const site = getSite(sess.siteId);
+  const consentData = {
+    agreed: consentChoice === 'ok',
+    date: document.getElementById('consentDate').value.trim(),
+    contractNo: document.getElementById('consentContractNo').value.trim(),
+    address: document.getElementById('consentAddress').value.trim(),
+    savedAt: new Date().toISOString(),
+  };
+
+  try {
+    const pngDataUrl = await generateConsentPng(site, consentData);
+    consentData.pngDataUrl = pngDataUrl;
+    site.consent = consentData;
+    site.updatedAt = new Date().toISOString();
+    upsertSite(site);
+
+    // Dropboxアップロード
+    const s = loadSettings();
+    if (s.token || s.refreshToken) {
+      try {
+        const token = await getValidToken();
+        const basePath = getBasePath();
+        if (basePath) {
+          const folder = `${site.siteName}_${site.workType}_${getTodayStr()}`;
+          const blob = dataUrlToBlob(pngDataUrl);
+          await uploadToDropbox(blob, `${basePath}/${site.staffName}/${folder}/consent.png`, token);
+        }
+      } catch(e) { console.warn('consent.png upload failed:', e.message); }
+    }
+
+    alert(consentChoice === 'ok' ? '✅ 承諾書を保存しました（承諾する）' : '✅ 承諾書を保存しました（承諾しない）');
+    showScreen(0);
+  } catch(e) {
+    alert('承諾書の生成に失敗しました：' + e.message);
+  }
+}
+
+// input監視（9a）
+document.addEventListener('DOMContentLoaded', () => {
+  ['consentDate','consentContractNo','consentAddress'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', checkConsent9aReady);
+  });
+});
 
 // ===== DELETE =====
 function deleteSiteFromList(id) {
