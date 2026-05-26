@@ -891,6 +891,7 @@ async function handleOAuthCallback() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error_description || data.error);
 
+    // トークンを一旦保存
     const s = loadSettings();
     saveSettingsData({
       ...s,
@@ -899,6 +900,27 @@ async function handleOAuthCallback() {
       tokenExpiry: Date.now() + (data.expires_in - 60) * 1000,
     });
     localStorage.removeItem('ba_shot_pkce_verifier');
+
+    // チームのルートnamespace_idを取得して保存
+    try {
+      const nsRes = await fetch('https://api.dropboxapi.com/2/users/get_current_account', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + data.access_token,
+          'Content-Type': 'application/json',
+        },
+        body: 'null',
+      });
+      const nsData = await nsRes.json();
+      if (nsData.root_info && nsData.root_info.root_namespace_id) {
+        const rootNsId = nsData.root_info.root_namespace_id;
+        const s2 = loadSettings();
+        saveSettingsData({ ...s2, rootNamespaceId: rootNsId });
+      }
+    } catch(nsErr) {
+      console.warn('namespace_id取得失敗:', nsErr);
+    }
+
     alert('Dropboxとの連携が完了しました。');
   } catch(e) {
     alert('認証に失敗しました：' + e.message);
@@ -1724,13 +1746,31 @@ async function uploadToDropbox(blob, dropboxPath, token) {
       apiArg += rawArg[i];
     }
   }
+
+  // チームのルートnamespace_idがあればPath-Rootヘッダーを追加（チーム共有フォルダへ保存するため）
+  var headers = {
+    'Authorization': 'Bearer ' + token,
+    'Content-Type': 'application/octet-stream',
+    'Dropbox-API-Arg': apiArg,
+  };
+  var rootNsId = loadSettings().rootNamespaceId;
+  if (rootNsId) {
+    var pathRootVal = JSON.stringify({ '.tag': 'root', 'root': String(rootNsId) });
+    var pathRootEncoded = '';
+    for (var j = 0; j < pathRootVal.length; j++) {
+      var c2 = pathRootVal.charCodeAt(j);
+      if (c2 > 127) {
+        pathRootEncoded += String.fromCharCode(92) + 'u' + ('0000' + c2.toString(16)).slice(-4);
+      } else {
+        pathRootEncoded += pathRootVal[j];
+      }
+    }
+    headers['Dropbox-API-Path-Root'] = pathRootEncoded;
+  }
+
   const res = await fetch('https://content.dropboxapi.com/2/files/upload', {
     method: 'POST',
-    headers: {
-      'Authorization': 'Bearer ' + token,
-      'Content-Type': 'application/octet-stream',
-      'Dropbox-API-Arg': apiArg,
-    },
+    headers: headers,
     body: blob,
   });
   if (!res.ok) {
